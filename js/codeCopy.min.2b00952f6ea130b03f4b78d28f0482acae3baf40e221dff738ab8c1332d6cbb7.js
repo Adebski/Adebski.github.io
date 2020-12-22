@@ -1,0 +1,4 @@
+'use strict';function getTextFromCodeBlock(codeBlock){var codeElements=codeBlock.getElementsByTagName("code");var codeSnippet=codeElements[codeElements.length-1].innerText;return codeSnippet;}
+function addCopyButton(codeBlock){var button=document.createElement('button');button.className='copy-code-button';button.type='button';button.innerText='Copy';button.addEventListener('click',function(){navigator.clipboard.writeText(getTextFromCodeBlock(codeBlock)).then(function(){button.blur();button.innerText='Copied!';setTimeout(function(){button.innerText='Copy';},2000);},function(error){button.innerText='Error';});});var codeBlockParent=codeBlock.parentNode;codeBlockParent.insertBefore(button,codeBlock);}
+function addCopyButtons(){var highlightBlocks=document.getElementsByClassName('highlight');Array.prototype.forEach.call(highlightBlocks,addCopyButton);}
+window.addEventListener("load",addCopyButtons);
