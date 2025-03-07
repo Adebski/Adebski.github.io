@@ -1,476 +1,475 @@
-<!doctype html><html lang=en-us><head><meta charset=utf-8><meta name=HandheldFriendly content="True"><meta name=viewport content="width=device-width,initial-scale=1"><meta name=referrer content="no-referrer-when-downgrade"><title>An (incomplete) list of static analysis tools for Java - ItDepends</title><meta name=description content="ItDepends is a blog about various topics related to software engineering."><link rel=alternate type=application/rss+xml href=https://blog.adebski.com/posts/incomplete-list-of-static-analysis-tools-for-java/index.xml title=ItDepends><link rel=icon type=image/x-icon href=https://blog.adebski.com/favicon.ico><link rel=apple-touch-icon-precomposed href=https://blog.adebski.com/favicon.png><link rel=stylesheet href="https://blog.adebski.com/css/style.css?rnd=1640642555"><meta property="og:title" content="An (incomplete) list of static analysis tools for Java"><meta property="og:description" content="This post describes some of the static analysis tools I&rsquo;ve used in various Java projects over the years. In the last couple of days I&rsquo;ve been setting up  projects from scratch and decided it would be nice to organize some of the knowledge in a single place. Apart from discussing the tools themselves I also describe why it makes sense to include them in your next (or current) project."><meta property="og:type" content="article"><meta property="og:url" content="https://blog.adebski.com/posts/incomplete-list-of-static-analysis-tools-for-java/"><meta property="article:published_time" content="2021-05-22T00:00:00+00:00"><meta property="article:modified_time" content="2021-05-22T00:00:00+00:00"><meta name=twitter:card content="summary"><meta name=twitter:title content="An (incomplete) list of static analysis tools for Java"><meta name=twitter:description content="This post describes some of the static analysis tools I&rsquo;ve used in various Java projects over the years. In the last couple of days I&rsquo;ve been setting up  projects from scratch and decided it would be nice to organize some of the knowledge in a single place. Apart from discussing the tools themselves I also describe why it makes sense to include them in your next (or current) project."><link rel=stylesheet href=https://blog.adebski.com/css/overrides.min.273f022df8a1cc08098a95298e6a3f8946ad5089d3040667f6558f774d472a3b.css><script type=text/javascript src=https://blog.adebski.com/js/codeCopy.min.2b00952f6ea130b03f4b78d28f0482acae3baf40e221dff738ab8c1332d6cbb7.js></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-891PSZFW6E"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
-gtag('js',new Date());gtag('config','G-891PSZFW6E');</script><link rel=alternate type=application/rss+xml href=https://blog.adebski.com//index.xml title="ItDepends Feed"></head><body><a class=skip-main href=#main>Skip to main content</a><div class=container><header><div class=site-header-div><h1 class=site-header><a href=/>ItDepends</a></h1><nav><a href=https://blog.adebski.com/posts/>Archive</a>
-<a href=https://blog.adebski.com/about/>About</a></nav></div></header><main id=main tabindex=-1><aside><nav id=TableOfContents><ol><li><a href=#defining-static-analysis>Defining static analysis</a></li><li><a href=#static-analysis-tools-for-java>Static analysis tools for Java</a><ol><li><a href=#spotbugs-previously-findbugs>SpotBugs, previously FindBugs</a><ol><li><a href=#configuring-spotbugs>Configuring SpotBugs</a></li></ol></li><li><a href=#error-prone>Error Prone</a><ol><li><a href=#configuring-error-prone>Configuring Error Prone</a></li></ol></li><li><a href=#pmd>PMD</a><ol><li><a href=#configuring-pmd>Configuring PMD</a></li></ol></li><li><a href=#checkstyle>Checkstyle</a><ol><li><a href=#configuring-checkstyle>Configuring Checkstyle</a></li></ol></li></ol></li><li><a href=#advantages-and-disadvantages-of-using-static-analysis>Advantages and disadvantages of using static analysis</a></li><li><a href=#conclusion>Conclusion</a></li></ol></nav></aside><article class=post><header><h1 class=post-title>An (incomplete) list of static analysis tools for Java</h1></header><div class=content><p>This post describes some of the static analysis tools I&rsquo;ve used in various Java projects over the years. In the last couple of days I&rsquo;ve been setting up new projects from scratch and decided it would be nice to organize some of the knowledge in a single place.
-Apart from discussing the tools themselves I also describe why it makes sense to include them in your next (or current) projects.</p><h1 id=defining-static-analysis>Defining static analysis</h1><p>Per the Wikipedia entry on <a href=https://en.wikipedia.org/wiki/Static_program_analysis>Static Program Analysis</a>:</p><blockquote><p>Static program analysis is the analysis of computer software that is performed without actually executing programs, in contrast with dynamic analysis, which is analysis performed on programs while they are executing.In most cases the analysis is performed on some version of the source code, and in the other cases, some form of the object code.</p><p>The term is usually applied to the analysis performed by an automated tool, with human analysis being called program understanding, program comprehension, or code review. Software inspections and software walkthroughs are also used in the latter case.</p></blockquote><p>In more practical terms, we&rsquo;d like to use a tool that understands the code (syntactically or semantically), looks at it from a certain angle (formatting, code &ldquo;quality&rdquo;), and either &ldquo;improves&rdquo; the code automatically or generates a report with suggestions. I&rsquo;m using words like &ldquo;quality&rdquo; and &ldquo;improves&rdquo; vaguely, there are some practices generally agreed upon (e.g. we should avoid single-letter variables or magical numbers) but those are not rules written in stone. We may decide, for whatever reason, that in the context of a specific project we would like to not follow some of the &ldquo;good practices&rdquo;.</p><h1 id=static-analysis-tools-for-java>Static analysis tools for Java</h1><p>Over the years multiple static analysis tools have been developed for the Java language. I briefly describe each tool I&rsquo;m familiar with below and what class of &ldquo;things&rdquo; it&rsquo;s looking for. You can find a Maven project <a href=https://github.com/Adebski/JavaStaticAnalysis>on my GitHub with</a> all of them configured.</p><h2 id=spotbugs-previously-findbugs>SpotBugs, previously FindBugs</h2><p><a href=https://spotbugs.github.io/>https://spotbugs.github.io/</a></p><p><a href=http://findbugs.sourceforge.net/>http://findbugs.sourceforge.net/</a></p><p>According to <a href=https://en.wikipedia.org/wiki/FindBugs>Wikipedia article on FindBugs</a> it was first released on 10.06.2006. For whatever reason, the development on the project stopped and the last stable release is <code>3.0.1</code> released on 06.03.2015. The spiritual successor to FindBugs is SpotBugs, according to <a href=https://spotbugs.github.io/>their website</a></p><blockquote><p>SpotBugs is a program which uses static analysis to look for bugs in Java code. It is free software, distributed under the terms of the GNU Lesser General Public License.</p><p>SpotBugs is the spiritual successor of FindBugs, carrying on from the point where it left off with the support of its community. Please check the official manual for details.</p></blockquote><p>SpotBugs has an <a href=https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html>extensive list of over 400 &ldquo;bugs&rdquo; they look for in your code</a>. The &ldquo;bugs&rdquo; recognized by the tool come from different categories, like bad practice, code correctness, or issues with multi-threaded code. Some &ldquo;bug&rdquo; examples include: dropping exceptions, defining only <code>hashCode</code> or <code>equals</code>, comparing strings using <code>==/!=</code> instead of <code>equals</code>, and incrementing a value in a <code>volatile</code> field.</p><p>SpotBugs checks are executed against the <code>.class</code> files so theoretically it can be used in any programming language available on JVM (e.g. Scala, Kotlin, Clojure) but I&rsquo;ve only seen it used in Java projects.</p><h3 id=configuring-spotbugs>Configuring SpotBugs</h3><p>SpotBugs executes all the checks by default, we don&rsquo;t need to provide an additional file which enables specific checks. There is also an option to provide a &ldquo;filter&rdquo; file where we can disable specific checks for a given piece of code (e.g. a class or a method), you can find an example &ldquo;filter&rdquo; file at the end of this section.</p><p><a href=https://spotbugs.readthedocs.io/en/latest/maven.html>SpotBugs documentation</a> shows how to integrate it with various build systems, e.g. Gradle, Maven, or Ant. In the case of Maven you only need to declare a SpotBugs plugin and you are good to go.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
-</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=color:#f92672>&lt;build&gt;</span>
-    <span style=color:#f92672>&lt;plugins&gt;</span>
-        <span style=color:#75715e>&lt;!-- Based on https://spotbugs.readthedocs.io/en/latest/maven.html --&gt;</span>
-        <span style=color:#f92672>&lt;plugin&gt;</span>
-            <span style=color:#f92672>&lt;groupId&gt;</span>com.github.spotbugs<span style=color:#f92672>&lt;/groupId&gt;</span>
-            <span style=color:#f92672>&lt;artifactId&gt;</span>spotbugs-maven-plugin<span style=color:#f92672>&lt;/artifactId&gt;</span>
-            <span style=color:#f92672>&lt;version&gt;</span>4.2.0<span style=color:#f92672>&lt;/version&gt;</span>
-            <span style=color:#f92672>&lt;dependencies&gt;</span>
-                <span style=color:#75715e>&lt;!-- overwrite dependency on spotbugs if you want to specify the version of spotbugs --&gt;</span>
-                <span style=color:#f92672>&lt;dependency&gt;</span>
-                    <span style=color:#f92672>&lt;groupId&gt;</span>com.github.spotbugs<span style=color:#f92672>&lt;/groupId&gt;</span>
-                    <span style=color:#f92672>&lt;artifactId&gt;</span>spotbugs<span style=color:#f92672>&lt;/artifactId&gt;</span>
-                    <span style=color:#f92672>&lt;version&gt;</span>4.2.3<span style=color:#f92672>&lt;/version&gt;</span>
-                <span style=color:#f92672>&lt;/dependency&gt;</span>
-            <span style=color:#f92672>&lt;/dependencies&gt;</span>
-            <span style=color:#f92672>&lt;executions&gt;</span>
-                <span style=color:#f92672>&lt;execution&gt;</span>
-                    <span style=color:#f92672>&lt;goals&gt;</span>
-                        <span style=color:#f92672>&lt;goal&gt;</span>check<span style=color:#f92672>&lt;/goal&gt;</span>
-                    <span style=color:#f92672>&lt;/goals&gt;</span>
-                <span style=color:#f92672>&lt;/execution&gt;</span>
-            <span style=color:#f92672>&lt;/executions&gt;</span>
-        <span style=color:#f92672>&lt;/plugin&gt;</span>
-    <span style=color:#f92672>&lt;/plugins&gt;</span>
-<span style=color:#f92672>&lt;/build&gt;</span></code></pre></td></tr></table></div></div><p>The above configuration adds a plugin to your project <code>pom.xml</code> and will automatically execute <a href=https://spotbugs.github.io/spotbugs-maven-plugin/check-mojo.html>the <code>check</code> goal as defined by the plugin</a> during the <code>verify</code> phase of Maven build. In practice, it means the SpotBugs check will be performed automatically if you execute <code>mvn verify</code>, <code>mvn install</code>, or <code>mvn deploy</code>.</p><p>Below you can see an example <code>mvn verify</code> output in a project that defines a class which overrides <code>equals</code> without overriding <code>hashCode</code>.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">26
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">27
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">28
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">29
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">30
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">31
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">32
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">33
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">34
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">35
-</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>adebski@adebski-VirtualBox:~/IdeaProjects/JavaStaticAnalysis$ mvn verify
-...
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> &gt;&gt;&gt; spotbugs-maven-plugin:4.2.0:check <span style=color:#f92672>(</span>default<span style=color:#f92672>)</span> &gt; :spotbugs @ JavaStaticAnalysis &gt;&gt;&gt;
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> 
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> --- spotbugs-maven-plugin:4.2.0:spotbugs <span style=color:#f92672>(</span>spotbugs<span style=color:#f92672>)</span> @ JavaStaticAnalysis ---
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> Fork Value is true
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> Done SpotBugs Analysis....
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> 
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> <span style=color:#f92672>&lt;&lt;&lt;</span> spotbugs-maven-plugin:4.2.0:check <span style=color:#f92672>(</span>default<span style=color:#f92672>)</span> &lt; :spotbugs @ JavaStaticAnalysis <span style=color:#f92672>&lt;&lt;&lt;</span>
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> 
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> 
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> --- spotbugs-maven-plugin:4.2.0:check <span style=color:#f92672>(</span>default<span style=color:#f92672>)</span> @ JavaStaticAnalysis ---
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> BugInstance size is <span style=color:#ae81ff>1</span>
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> Error size is <span style=color:#ae81ff>0</span>
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> Total bugs: <span style=color:#ae81ff>1</span>
-<span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> High: com.adebski.HelloWorld$ProblematicClass defines equals and uses Object.hashCode<span style=color:#f92672>()</span> <span style=color:#f92672>[</span>com.adebski.HelloWorld$ProblematicClass<span style=color:#f92672>]</span> At HelloWorld.java:<span style=color:#f92672>[</span>lines 21-24<span style=color:#f92672>]</span> HE_EQUALS_USE_HASHCODE
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> 
-
-
-To see bug detail using the Spotbugs GUI, use the following command <span style=color:#e6db74>&#34;mvn spotbugs:gui&#34;</span>
-
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> ------------------------------------------------------------------------
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> BUILD FAILURE
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> ------------------------------------------------------------------------
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> Total time:  7.389 s
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> Finished at: 2021-05-06T20:45:34+01:00
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> ------------------------------------------------------------------------
-<span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> Failed to execute goal com.github.spotbugs:spotbugs-maven-plugin:4.2.0:check <span style=color:#f92672>(</span>default<span style=color:#f92672>)</span> on project JavaStaticAnalysis: failed with <span style=color:#ae81ff>1</span> bugs and <span style=color:#ae81ff>0</span> errors  -&gt; <span style=color:#f92672>[</span>Help 1<span style=color:#f92672>]</span>
-<span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> 
-<span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> To see the full stack trace of the errors, re-run Maven with the -e switch.
-<span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> Re-run Maven using the -X switch to enable full debug logging.
-<span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> 
-<span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> For more information about the errors and possible solutions, please read the following articles:
-<span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> <span style=color:#f92672>[</span>Help 1<span style=color:#f92672>]</span> http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException
-adebski@adebski-VirtualBox:~/IdeaProjects/JavaStaticAnalysis$ </code></pre></td></tr></table></div></div><p>In the real world there are cases where we&rsquo;d like to inform the static analysis tool that some of the patterns should not apply to specific fragments of code (e.g. methods, classes). In SpotBugs we can configure an XML filter file where we specify patterns (e.g. class name) and a range of &ldquo;bugs&rdquo; that should be ignored for all places that match a given pattern. You can read more about the filters and see some examples in the <a href=https://spotbugs.readthedocs.io/en/stable/filter.html>official documentation</a>. The filter file below disables all checks for the class <code>com.adebski.HelloWorld$Bar</code> and &ldquo;bad practice&rdquo; bugs for <code>method</code> method in <code>com.adebski.HelloWorld$ProblematicClass</code>.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
-</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=color:#75715e>&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span>
-<span style=color:#f92672>&lt;FindBugsFilter</span>
-        <span style=color:#a6e22e>xmlns=</span><span style=color:#e6db74>&#34;https://github.com/spotbugs/filter/3.0.0&#34;</span>
-        <span style=color:#a6e22e>xmlns:xsi=</span><span style=color:#e6db74>&#34;http://www.w3.org/2001/XMLSchema-instance&#34;</span>
-        <span style=color:#a6e22e>xsi:schemaLocation=</span><span style=color:#e6db74>&#34;https://github.com/spotbugs/filter/3.0.0 https://raw.githubusercontent.com/spotbugs/spotbugs/3.1.0/spotbugs/etc/findbugsfilter.xsd&#34;</span><span style=color:#f92672>&gt;</span>
-    <span style=color:#f92672>&lt;Match&gt;</span>
-        <span style=color:#f92672>&lt;Class</span> <span style=color:#a6e22e>name=</span><span style=color:#e6db74>&#34;com.adebski.HelloWorld$Bar&#34;</span> <span style=color:#f92672>/&gt;</span>
-    <span style=color:#f92672>&lt;/Match&gt;</span>
-
-    <span style=color:#f92672>&lt;Match&gt;</span>
-        <span style=color:#f92672>&lt;Class</span> <span style=color:#a6e22e>name=</span><span style=color:#e6db74>&#34;com.adebski.HelloWorld$ProblematicClass&#34;</span><span style=color:#f92672>/&gt;</span>
-        <span style=color:#f92672>&lt;Method</span> <span style=color:#a6e22e>name=</span><span style=color:#e6db74>&#34;method&#34;</span> <span style=color:#f92672>/&gt;</span>
-        <span style=color:#f92672>&lt;Bug</span> <span style=color:#a6e22e>code=</span><span style=color:#e6db74>&#34;BC&#34;</span> <span style=color:#f92672>/&gt;</span>
-    <span style=color:#f92672>&lt;/Match&gt;</span>
-<span style=color:#f92672>&lt;/FindBugsFilter&gt;</span></code></pre></td></tr></table></div></div><h2 id=error-prone>Error Prone</h2><p><a href=https://github.com/google/error-prone>https://github.com/google/error-prone</a></p><p>Error Prone is a static code analyzer from Google. It&rsquo;s implemented as a <a href=https://docs.oracle.com/en/java/javase/11/docs/api/jdk.compiler/com/sun/source/util/Plugin.html>javac compiler plugin</a> so the checks are performed during the code compilation.</p><p>Error Prone can detect <a href=https://errorprone.info/bugpatterns>over 400 bug patterns</a> but only some of them are enabled as errors by default, the rest of them emit only warnings or they are marked as experimental and won&rsquo;t be executed unless an Error Prone plugin is configured to consider them. There is some overlap between patterns detected by SpotBugs and Error Prone but Error Prone offers additional checks that verify we are using some of the Google libraries (e.g. Guice or AutoValue) in a correct way.</p><h3 id=configuring-error-prone>Configuring Error Prone</h3><p>Because Error Prone is implemented as a javac plugin all we need to do is to modify the configuration of <code>maven-compiler-plugin</code> as per the <a href=https://errorprone.info/docs/installation>plugin documentation</a>. In the snippet below you can also see how to instruct the plugin to emit an error for a check that, by default, is treated only as a warning, e.g. <a href=https://errorprone.info/bugpattern/ComparableAndComparator>class should not implement both <code>Comparable</code> and <code>Comparator</code></a>. You can read more about the Maven integration <a href=http://errorprone.info/docs/flags#maven>here</a>, all of the command line flags are documented <a href=https://errorprone.info/docs/flags>here</a>.</p><p>From Java 16 we also need to make sure that Maven forks a separate JVM to run the <code>javac</code> compiler and we also need to add the <code>add-exports</code> and <code>add-opens</code> since Error Prone is accessing some of the private APIs to do its job, you can read more about <a href=https://openjdk.java.net/jeps/396>JEP 396: Strongly Encapsulate JDK Internals by Default</a> if you are curious. If you are using one of the previous Java versions you may see a warning emitted by the <code>javac</code> compiler that private APIs are being accessed and that access will be prohibited in the future.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">26
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">27
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">28
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">29
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">30
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">31
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">32
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">33
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">34
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">35
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">36
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">37
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">38
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">39
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">40
-</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=color:#f92672>&lt;build&gt;</span>
-    <span style=color:#75715e>&lt;!-- Based on https://errorprone.info/docs/installation --&gt;</span>
-    <span style=color:#f92672>&lt;plugin&gt;</span>
-        <span style=color:#f92672>&lt;groupId&gt;</span>org.apache.maven.plugins<span style=color:#f92672>&lt;/groupId&gt;</span>
-        <span style=color:#f92672>&lt;artifactId&gt;</span>maven-compiler-plugin<span style=color:#f92672>&lt;/artifactId&gt;</span>
-        <span style=color:#f92672>&lt;version&gt;</span>3.8.1<span style=color:#f92672>&lt;/version&gt;</span>
-        <span style=color:#f92672>&lt;configuration&gt;</span>
-            <span style=color:#f92672>&lt;source&gt;</span>11<span style=color:#f92672>&lt;/source&gt;</span>
-            <span style=color:#f92672>&lt;target&gt;</span>11<span style=color:#f92672>&lt;/target&gt;</span>
-            <span style=color:#f92672>&lt;fork&gt;</span>true<span style=color:#f92672>&lt;/fork&gt;</span>
-            <span style=color:#f92672>&lt;encoding&gt;</span>UTF-8<span style=color:#f92672>&lt;/encoding&gt;</span>
-                <span style=color:#f92672>&lt;compilerArgs&gt;</span>
-                    <span style=color:#f92672>&lt;arg&gt;</span>-XDcompilePolicy=simple<span style=color:#f92672>&lt;/arg&gt;</span>
-                    <span style=color:#f92672>&lt;arg&gt;</span>-Xplugin:ErrorProne -Xep:ComparableAndComparator:ERROR<span style=color:#f92672>&lt;/arg&gt;</span>
-                    <span style=color:#f92672>&lt;arg&gt;</span>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED<span style=color:#f92672>&lt;/arg&gt;</span>
-                    <span style=color:#f92672>&lt;arg&gt;</span>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED<span style=color:#f92672>&lt;/arg&gt;</span>
-                    <span style=color:#f92672>&lt;arg&gt;</span>-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED<span style=color:#f92672>&lt;/arg&gt;</span>
-                    <span style=color:#f92672>&lt;arg&gt;</span>-J--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED<span style=color:#f92672>&lt;/arg&gt;</span>
-                    <span style=color:#f92672>&lt;arg&gt;</span>-J--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED<span style=color:#f92672>&lt;/arg&gt;</span>
-                    <span style=color:#f92672>&lt;arg&gt;</span>-J--add-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED<span style=color:#f92672>&lt;/arg&gt;</span>
-                    <span style=color:#f92672>&lt;arg&gt;</span>-J--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED<span style=color:#f92672>&lt;/arg&gt;</span>
-                    <span style=color:#f92672>&lt;arg&gt;</span>-J--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED<span style=color:#f92672>&lt;/arg&gt;</span>
-                    <span style=color:#f92672>&lt;arg&gt;</span>-J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED<span style=color:#f92672>&lt;/arg&gt;</span>
-                    <span style=color:#f92672>&lt;arg&gt;</span>-J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED<span style=color:#f92672>&lt;/arg&gt;</span>
-                <span style=color:#f92672>&lt;/compilerArgs&gt;</span>
-            <span style=color:#f92672>&lt;annotationProcessorPaths&gt;</span>
-                <span style=color:#f92672>&lt;path&gt;</span>
-                    <span style=color:#f92672>&lt;groupId&gt;</span>com.google.errorprone<span style=color:#f92672>&lt;/groupId&gt;</span>
-                    <span style=color:#f92672>&lt;artifactId&gt;</span>error_prone_core<span style=color:#f92672>&lt;/artifactId&gt;</span>
-                    <span style=color:#f92672>&lt;version&gt;</span>2.6.0<span style=color:#f92672>&lt;/version&gt;</span>
-                <span style=color:#f92672>&lt;/path&gt;</span>
-                <span style=color:#75715e>&lt;!-- Other annotation processors go here.
-</span><span style=color:#75715e>
-</span><span style=color:#75715e>                If &#39;annotationProcessorPaths&#39; is set, processors will no longer be
-</span><span style=color:#75715e>                discovered on the regular -classpath; see also &#39;Using Error Prone
-</span><span style=color:#75715e>                together with other annotation processors&#39; below. --&gt;</span>
-            <span style=color:#f92672>&lt;/annotationProcessorPaths&gt;</span>
-        <span style=color:#f92672>&lt;/configuration&gt;</span>
-    <span style=color:#f92672>&lt;/plugin&gt;</span>
-<span style=color:#f92672>&lt;/build&gt;</span></code></pre></td></tr></table></div></div><h2 id=pmd>PMD</h2><p><a href=https://pmd.github.io/>https://pmd.github.io/</a></p><p>PMD is an extensible cross-language static code analyzer, it &ldquo;understands&rdquo; languages like Java but it also has rules for things like Maven pom files, generic XMLs, or JSP files. It has over <a href=https://pmd.github.io/latest/pmd_rules_java.html>300 rules for Java alone</a>.</p><h3 id=configuring-pmd>Configuring PMD</h3><p>PMD handles rules differently than Error Prone or SpotBugs. By default, no rules are enabled and we need to construct an XML ruleset file ourselves. The good thing is that we don&rsquo;t need to reference each of the rules in our ruleset file directly, we can enable all rules from a specific category, e.g. <a href=https://pmd.github.io/pmd-6.34.0/pmd_rules_java_bestpractices.html>best practices</a>. We can also exclude specific files from analysis, but we are not able to disable only a subset of rules for a specific file.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
-</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=color:#75715e>&lt;?xml version=&#34;1.0&#34;?&gt;</span>
-
-<span style=color:#f92672>&lt;ruleset</span> <span style=color:#a6e22e>name=</span><span style=color:#e6db74>&#34;Custom Rules&#34;</span>
-         <span style=color:#a6e22e>xmlns=</span><span style=color:#e6db74>&#34;http://pmd.sourceforge.net/ruleset/2.0.0&#34;</span>
-         <span style=color:#a6e22e>xmlns:xsi=</span><span style=color:#e6db74>&#34;http://www.w3.org/2001/XMLSchema-instance&#34;</span>
-         <span style=color:#a6e22e>xsi:schemaLocation=</span><span style=color:#e6db74>&#34;http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd&#34;</span><span style=color:#f92672>&gt;</span>
-
-    <span style=color:#f92672>&lt;description&gt;</span>
-        Description of rules.
-    <span style=color:#f92672>&lt;/description&gt;</span>
-
-    <span style=color:#75715e>&lt;!-- Adding specific PMD rule --&gt;</span>
-    <span style=color:#f92672>&lt;rule</span> <span style=color:#a6e22e>ref=</span><span style=color:#e6db74>&#34;category/java/errorprone.xml/EmptyCatchBlock&#34;</span> <span style=color:#f92672>/&gt;</span>
-
-    <span style=color:#75715e>&lt;!-- Adding all rules from a single category --&gt;</span>
-    <span style=color:#f92672>&lt;rule</span> <span style=color:#a6e22e>ref=</span><span style=color:#e6db74>&#34;category/java/multithreading.xml&#34;</span> <span style=color:#f92672>/&gt;</span>
-
-    <span style=color:#f92672>&lt;exclude-pattern&gt;</span>.*/com/adebski/HelloWorld.*<span style=color:#f92672>&lt;/exclude-pattern&gt;</span>
-<span style=color:#f92672>&lt;/ruleset&gt;</span></code></pre></td></tr></table></div></div><p>Once we have our rule set file we need to add the PMD to our pom.xml file.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">26
-</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=color:#f92672>&lt;build&gt;</span>
-    <span style=color:#f92672>&lt;plugins&gt;</span>
-        <span style=color:#75715e>&lt;!-- Based on https://pmd.github.io/pmd-6.34.0/pmd_userdocs_tools_maven.html --&gt;</span>
-        <span style=color:#f92672>&lt;plugin&gt;</span>
-            <span style=color:#f92672>&lt;groupId&gt;</span>org.apache.maven.plugins<span style=color:#f92672>&lt;/groupId&gt;</span>
-            <span style=color:#f92672>&lt;artifactId&gt;</span>maven-pmd-plugin<span style=color:#f92672>&lt;/artifactId&gt;</span>
-            <span style=color:#f92672>&lt;version&gt;</span>3.13.0<span style=color:#f92672>&lt;/version&gt;</span>
-            <span style=color:#f92672>&lt;configuration&gt;</span>
-                <span style=color:#75715e>&lt;!-- failOnViolation is actually true by default, but can be disabled --&gt;</span>
-                <span style=color:#f92672>&lt;failOnViolation&gt;</span>true<span style=color:#f92672>&lt;/failOnViolation&gt;</span>
-                <span style=color:#75715e>&lt;!-- printFailingErrors is pretty useful --&gt;</span>
-                <span style=color:#f92672>&lt;printFailingErrors&gt;</span>true<span style=color:#f92672>&lt;/printFailingErrors&gt;</span>
-                <span style=color:#f92672>&lt;rulesets&gt;</span>
-                    <span style=color:#f92672>&lt;ruleset&gt;</span>/pmd-ruleset.xml<span style=color:#f92672>&lt;/ruleset&gt;</span>
-                <span style=color:#f92672>&lt;/rulesets&gt;</span>
-            <span style=color:#f92672>&lt;/configuration&gt;</span>
-            <span style=color:#f92672>&lt;executions&gt;</span>
-                <span style=color:#f92672>&lt;execution&gt;</span>
-                    <span style=color:#f92672>&lt;goals&gt;</span>
-                        <span style=color:#f92672>&lt;goal&gt;</span>check<span style=color:#f92672>&lt;/goal&gt;</span>
-                    <span style=color:#f92672>&lt;/goals&gt;</span>
-                <span style=color:#f92672>&lt;/execution&gt;</span>
-            <span style=color:#f92672>&lt;/executions&gt;</span>
-        <span style=color:#f92672>&lt;/plugin&gt;</span>
-    <span style=color:#f92672>&lt;/plugins&gt;</span>
-<span style=color:#f92672>&lt;/build&gt;</span></code></pre></td></tr></table></div></div><p>Now, the PMD will be executed as part of the <code>verify</code> goal, the same as SpotBugs.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">26
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">27
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">28
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">29
-</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>adebski@adebski-VirtualBox:~/IdeaProjects/JavaStaticAnalysis$ mvn verify
-...
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> &gt;&gt;&gt; maven-pmd-plugin:3.13.0:check <span style=color:#f92672>(</span>default<span style=color:#f92672>)</span> &gt; :pmd @ JavaStaticAnalysis &gt;&gt;&gt;
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> 
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> --- maven-pmd-plugin:3.13.0:pmd <span style=color:#f92672>(</span>pmd<span style=color:#f92672>)</span> @ JavaStaticAnalysis ---
-<span style=color:#f92672>[</span>WARNING<span style=color:#f92672>]</span> Unable to locate Source XRef to link to - DISABLED
-<span style=color:#f92672>[</span>WARNING<span style=color:#f92672>]</span> Unable to locate Source XRef to link to - DISABLED
-<span style=color:#f92672>[</span>WARNING<span style=color:#f92672>]</span> File encoding has not been set, using platform encoding UTF-8, i.e. build is platform dependent!
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> 
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> <span style=color:#f92672>&lt;&lt;&lt;</span> maven-pmd-plugin:3.13.0:check <span style=color:#f92672>(</span>default<span style=color:#f92672>)</span> &lt; :pmd @ JavaStaticAnalysis <span style=color:#f92672>&lt;&lt;&lt;</span>
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> 
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> 
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> --- maven-pmd-plugin:3.13.0:check <span style=color:#f92672>(</span>default<span style=color:#f92672>)</span> @ JavaStaticAnalysis ---
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> PMD version: 6.21.0
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> PMD Failure: com.adebski.HelloWorld:13 Rule:EmptyCatchBlock Priority:3 Avoid empty catch blocks.
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> ------------------------------------------------------------------------
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> BUILD FAILURE
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> ------------------------------------------------------------------------
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> Total time:  10.770 s
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> Finished at: 2021-05-08T15:47:48+01:00
-<span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> ------------------------------------------------------------------------
-<span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> Failed to execute goal org.apache.maven.plugins:maven-pmd-plugin:3.13.0:check <span style=color:#f92672>(</span>default<span style=color:#f92672>)</span> on project JavaStaticAnalysis: You have <span style=color:#ae81ff>1</span> PMD violation. For more details see: /home/adebski/IdeaProjects/JavaStaticAnalysis/target/pmd.xml -&gt; <span style=color:#f92672>[</span>Help 1<span style=color:#f92672>]</span>
-<span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> 
-<span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> To see the full stack trace of the errors, re-run Maven with the -e switch.
-<span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> Re-run Maven using the -X switch to enable full debug logging.
-<span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> 
-<span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> For more information about the errors and possible solutions, please read the following articles:
-<span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> <span style=color:#f92672>[</span>Help 1<span style=color:#f92672>]</span> http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
-adebski@adebski-VirtualBox:~/IdeaProjects/JavaStaticAnalysis$ </code></pre></td></tr></table></div></div><h2 id=checkstyle>Checkstyle</h2><p><a href=https://checkstyle.sourceforge.io/>https://checkstyle.sourceforge.io/</a></p><p>Checkstyle is a tool we can use to make sure our source code adheres to a coding standard, this covers things like making sure the code is formatted consistently (e.g. placement of <code>{</code> characters, enforcing a line length) but also that it follows some of the &ldquo;best practices&rdquo;, e.g. <a href=https://checkstyle.sourceforge.io/config_design.html#MutableException>creating only immutable Exceptions</a> or that <a href=https://checkstyle.sourceforge.io/config_coding.html#StringLiteralEquality>Strings are compared using <code>equals</code> instead of <code>==</code></a>.</p><p>Checkstyle offers <a href=https://checkstyle.sourceforge.io/checks.html>more than 100 built-in style checks</a> and it&rsquo;s also possible to <a href=https://checkstyle.sourceforge.io/writingchecks.html>write your own checks</a>.</p><h3 id=configuring-checkstyle>Configuring Checkstyle</h3><p>Integrating Checkstyle with your Maven build is just a matter of adding <a href=http://maven.apache.org/plugins/maven-checkstyle-plugin/>Checkstyle Maven plugin</a> to your <code>pom.xml</code> file and specifying a Checkstyle xml configuration file. Checkstyle user guide <a href=https://checkstyle.sourceforge.io/config.html>has a whole section on how to write your configuration file</a> but you can also use one of the existing configurations as a starting point, e.g. <a href=https://checkstyle.sourceforge.io/google_style.html>Checkstyle configuration that follows recommendations from the Google&rsquo;s Java style guide</a>.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">26
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">27
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">28
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">29
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">30
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">31
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">32
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">33
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">34
-</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=color:#f92672>&lt;build&gt;</span>
-    <span style=color:#f92672>&lt;plugins&gt;</span>
-    <span style=color:#75715e>&lt;!-- based on http://maven.apache.org/plugins/maven-checkstyle-plugin/usage.html --&gt;</span>
-        <span style=color:#f92672>&lt;plugin&gt;</span>
-            <span style=color:#f92672>&lt;groupId&gt;</span>org.apache.maven.plugins<span style=color:#f92672>&lt;/groupId&gt;</span>
-            <span style=color:#f92672>&lt;artifactId&gt;</span>maven-checkstyle-plugin<span style=color:#f92672>&lt;/artifactId&gt;</span>
-            <span style=color:#f92672>&lt;version&gt;</span>3.1.2<span style=color:#f92672>&lt;/version&gt;</span>
-            <span style=color:#f92672>&lt;configuration&gt;</span>
-                <span style=color:#f92672>&lt;configLocation&gt;</span>checkstyle.xml<span style=color:#f92672>&lt;/configLocation&gt;</span>
-                <span style=color:#f92672>&lt;encoding&gt;</span>UTF-8<span style=color:#f92672>&lt;/encoding&gt;</span>
-                <span style=color:#f92672>&lt;consoleOutput&gt;</span>true<span style=color:#f92672>&lt;/consoleOutput&gt;</span>
-                <span style=color:#f92672>&lt;failsOnError&gt;</span>true<span style=color:#f92672>&lt;/failsOnError&gt;</span>
-                <span style=color:#f92672>&lt;linkXRef&gt;</span>false<span style=color:#f92672>&lt;/linkXRef&gt;</span>
-            <span style=color:#f92672>&lt;/configuration&gt;</span>
-            <span style=color:#75715e>&lt;!-- explicitly specifying the newest (at the time) Checkstyle version --&gt;</span>
-            <span style=color:#f92672>&lt;dependencies&gt;</span>
-                <span style=color:#f92672>&lt;dependency&gt;</span>
-                    <span style=color:#f92672>&lt;groupId&gt;</span>com.puppycrawl.tools<span style=color:#f92672>&lt;/groupId&gt;</span>
-                    <span style=color:#f92672>&lt;artifactId&gt;</span>checkstyle<span style=color:#f92672>&lt;/artifactId&gt;</span>
-                    <span style=color:#f92672>&lt;version&gt;</span>8.42<span style=color:#f92672>&lt;/version&gt;</span>
-                <span style=color:#f92672>&lt;/dependency&gt;</span>
-            <span style=color:#f92672>&lt;/dependencies&gt;</span>
-            <span style=color:#f92672>&lt;executions&gt;</span>
-                <span style=color:#f92672>&lt;execution&gt;</span>
-                    <span style=color:#f92672>&lt;id&gt;</span>validate<span style=color:#f92672>&lt;/id&gt;</span>
-                    <span style=color:#f92672>&lt;phase&gt;</span>validate<span style=color:#f92672>&lt;/phase&gt;</span>
-                    <span style=color:#f92672>&lt;goals&gt;</span>
-                        <span style=color:#f92672>&lt;goal&gt;</span>check<span style=color:#f92672>&lt;/goal&gt;</span>
-                    <span style=color:#f92672>&lt;/goals&gt;</span>
-                <span style=color:#f92672>&lt;/execution&gt;</span>
-            <span style=color:#f92672>&lt;/executions&gt;</span>
-        <span style=color:#f92672>&lt;/plugin&gt;</span>
-    <span style=color:#f92672>&lt;/plugins&gt;</span>
-<span style=color:#f92672>&lt;/build&gt;</span></code></pre></td></tr></table></div></div><p>To suppress a specific check for a given section of our code we need to use one of the <a href=https://checkstyle.sourceforge.io/config_filters.html>Checkstyle suppression filters</a>.
-For example we can configure <a href=https://checkstyle.sourceforge.io/config_filters.html#SuppressionCommentFilter>SuppressionCommentFilter</a> to mark a block of code with special comments to disable specific checks, there is also an option to specify a suppression file using the <a href=https://checkstyle.sourceforge.io/config_filters.html#SuppressionFilter>SuppressionFilter</a>. The suppression file is an XML document where we configure which checks should be disabled for what classes or their specific parts.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
-</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=color:#75715e>&lt;?xml version=&#34;1.0&#34;?&gt;</span>
-
-<span style=color:#75715e>&lt;!DOCTYPE suppressions PUBLIC
-</span><span style=color:#75715e>  &#34;-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN&#34;
-</span><span style=color:#75715e>  &#34;https://checkstyle.org/dtds/suppressions_1_2.dtd&#34;&gt;</span>
-<span style=color:#75715e>&lt;!-- taken from https://checkstyle.sourceforge.io/config_filters.html#SuppressionFilter --&gt;</span>
-
-<span style=color:#f92672>&lt;suppressions&gt;</span>
-  <span style=color:#f92672>&lt;suppress</span> <span style=color:#a6e22e>checks=</span><span style=color:#e6db74>&#34;JavadocStyleCheck&#34;</span>
-    <span style=color:#a6e22e>files=</span><span style=color:#e6db74>&#34;AbstractComplexityCheck.java&#34;</span>
-    <span style=color:#a6e22e>lines=</span><span style=color:#e6db74>&#34;82,108-122&#34;</span><span style=color:#f92672>/&gt;</span>
-  <span style=color:#f92672>&lt;suppress</span> <span style=color:#a6e22e>checks=</span><span style=color:#e6db74>&#34;MagicNumberCheck&#34;</span>
-    <span style=color:#a6e22e>files=</span><span style=color:#e6db74>&#34;JavadocStyleCheck.java&#34;</span>
-    <span style=color:#a6e22e>lines=</span><span style=color:#e6db74>&#34;221&#34;</span><span style=color:#f92672>/&gt;</span>
-  <span style=color:#f92672>&lt;suppress</span> <span style=color:#a6e22e>message=</span><span style=color:#e6db74>&#34;Missing a Javadoc comment&#34;</span><span style=color:#f92672>/&gt;</span>
-<span style=color:#f92672>&lt;/suppressions&gt;</span></code></pre></td></tr></table></div></div><p>Additionally there are a lot of Checkstyle plugins available <a href=https://checkstyle.sourceforge.io/index.html#Related_Tools>for various IDEs</a>, e.g. <a href=https://github.com/jshiell/checkstyle-idea>jshiell/checkstyle-idea</a> for IntelliJ. One nice feature of the IntelliJ Checkstyle plugin is the ability to configure the IntelliJ code formatter based on your Checkstyle configuration. You can find instructions on how to do that in <a href=https://stackoverflow.com/questions/14539313/intellij-idea-code-format-from-checkstyle-configuration/35273850#35273850>this Stack Overflow post</a>.</p><h1 id=advantages-and-disadvantages-of-using-static-analysis>Advantages and disadvantages of using static analysis</h1><p>Intuitively it &ldquo;makes sense&rdquo; to use tools and automation for:</p><ul><li>detecting as early as possible, a class of bugs/problems that apply to &ldquo;most&rdquo; software engineering projects,</li><li>keeping the code style/formatting consistent in a single project or all the projects maintained by the team.</li></ul><p>Without automating those tasks we rely on humans to catch all problems in the code review process and, from my experience, some things always slip through the cracks. Not all team members may be aware of every convention, especially if a team is compromised of people who joined after the project was started (which is a very common situation) or are new to the company. When reviewing &ldquo;large&rdquo; code reviews it may be exhausting and discouraging to point out every little discrepancy with the style guides and conventions and it wastes the mental cycles of the reviewer who should be looking for bugs and issues with the business logic or at larger architectural decisions.</p><p>When we use a programming language or a technology we are not very familiar with it&rsquo;s easy to use it in a non-idiomatic way or introduce bugs to our system. We don&rsquo;t always have the luxury of having a person in our team (or organization) who we can consult on the way we use a technology. Static analysis tools help us avoid at least some of the potential issues that happen when we try to use something new. It&rsquo;s also a learning opportunity, when a static analysis flags a part of code due to an error we were not even aware of. In the future there is a higher chance of us avoiding writing a code like that altogether. We may also start to be aware of classes of bugs we did not consider before, e.g. SQL Injection.</p><p>It&rsquo;s important to keep the signal to noise ratio at the acceptable level. If we introduce a static analysis to an existing project and we are presented with hundreds or thousands of &ldquo;issues&rdquo; each time we build our software we will most likely just ignore them, what&rsquo;s the difference between 1004 and 1005 potential errors? Static analysis also increases the time it takes to build/compile the project. If the new tool we try to integrate increases the build time to an unacceptable levels (and this depends on a project and our baseline) we should weigh in the value that the tool brings vs the decrease in developer productivity.</p><p>If we integrate static analysis in our project we should incorporate the checks with our build scripts and systems so that the analysis is always performed as part of the build; otherwise, it will be easy to forget (or not even know) that you need to run an additional command to verify that everything meets the quality bar agreed by the team.
-Additionally, those checks should be executed again in our CI/CD pipelines to catch guard against (hopefully rare) situations where someone ignores the errors and just pushes the code hopping for the best. The checks should be treated as errors and fail the build, once we have a couple of violations in the project it&rsquo;s hard to distinguish if the umpteenth warning is an actual issue or not. That&rsquo;s also why tools offer a way to suppress or disable specific checks or rules for a given piece of code, from time to time there are genuine situations where the code needs to violate one rule, but those situations should be rare. If we need to disable a specific check for most of our code we should think about removing the rule altogether.</p><p>Out of curiosity I&rsquo;ve gooled for papers about the usefulness of static analysis tools for languages like Java and C++:</p><ul><li><a href=https://ieeexplore.ieee.org/document/8681007>Q. Ashfaq, R. Khan and S. Farooq, &ldquo;A Comparative Analysis of Static Code Analysis Tools that check Java Code Adherence to Java Coding Standards,&rdquo; 2019 2nd International Conference on Communication, Computing and Digital systems (C-CODE), 2019, pp. 98-103, doi: 10.1109/C-CODE.2019.8681007.</a>,</li><li><a href=https://www.researchgate.net/publication/332228434_A_Comparative_Analysis_of_Static_Code_Analysis_Tools_that_check_Java_Code_Adherence_to_Java_Coding_Standards>Ashfaq, Qirat & Khan, Rimsha & Farooq, Sehrish. (2019). A Comparative Analysis of Static Code Analysis Tools that check Java Code Adherence to Java Coding Standards. 98-103. 10.1109/C-CODE.2019.8681007.</a>,</li><li><a href=https://www.researchgate.net/publication/263674072_A_Review_of_Static_Analysis_Approaches_for_Programming_Exercises>Striewe, Michael & Goedicke, Michael. (2014). A Review of Static Analysis Approaches for Programming Exercises. 439. 10.1007/978-3-319-08657-6_10.</a>,</li><li><a href=https://dl.acm.org/doi/10.1145/3188720>Caitlin Sadowski, Edward Aftandilian, Alex Eagle, Liam Miller-Cushon, and Ciera Jaspan. 2018. Lessons from building static analysis tools at Google. Commun. ACM 61, 4 (April 2018), 58–66. DOI:https://doi.org/10.1145/3188720</a>,</li><li><a href=https://arxiv.org/abs/1805.09040>Rahma Mahmood and Qusay H. Mahmoud (2018). Evaluation of Static Analysis Tools for Finding Vulnerabilities in Java and C/C++ Source Code. CoRR, abs/1805.09040.</a>.</li></ul><p>Here are some of the takeaways from the papers above:</p><ul><li>No static analysis tools are perfect and can catch all the issues, for better coverage we should try and use more than one, even if there is some overlap between them.</li><li>Static analysis needs to be integrated into the developer workflow and the software build process. When Google initially tried to integrate FindBugs into their process, by scanning the code base nightly and posting a bug dashboard, it saw little use because the dashboard was not part of the developer&rsquo;s usual workflow.</li><li><a href=https://pitest.org/>PITEST</a> can be used to perform mutation testing on our code, basically checking if our unit tests fail if the source code is modified according to some rules (e.g. changing the if statement form <code>a >= b</code> to <code>a > b</code>). The assumption is that when the application code changes, it should produce different results and cause the unit tests to fail. If a unit test does not fail in this situation, it may indicate an issue with the test suite.</li></ul><h1 id=conclusion>Conclusion</h1><p>I feel that static analysis tools are useful tools that should be integrated into the developer workflow and the software build process. They help to catch bugs and errors at the language level and they make sure that our/team&rsquo;s code meets a specific quality bar. When reviewing a code review we may safely assume that the configured class of bugs is absent from the code and we can focus on finding more subtle bugs, reviewing architectural decisions and making sure that the code fulfills business requirements.</p></div><div class=post-info><div class=post-date>2021-05-22</div><div class=post-taxonomies></div></div></article><div id=disqus_thread></div><script type=application/javascript>var disqus_config=function(){};(function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById('disqus_thread').innerHTML='Disqus comments not available by default when the website is previewed locally.';return;}
-var d=document,s=d.createElement('script');s.async=true;s.src='//'+"ItDepends"+'.disqus.com/embed.js';s.setAttribute('data-timestamp',+new Date());(d.head||d.body).appendChild(s);})();</script><noscript>Please enable JavaScript to view the <a href=https://disqus.com/?ref_noscript>comments powered by Disqus.</a></noscript><a href=https://disqus.com class=dsq-brlink>comments powered by <span class=logo-disqus>Disqus</span></a></main><footer><p>Powered by <a target=_blank href=https://gohugo.io/>Hugo</a>, theme <a target=_blank href=https://github.com/mitrichius/hugo-theme-anubis>Anubis</a>.</p></footer></div></body></html>
+<!doctype html><html lang=en-us><head><meta charset=utf-8><meta name=HandheldFriendly content="True"><meta name=viewport content="width=device-width,initial-scale=1"><meta name=referrer content="no-referrer-when-downgrade"><title>An (incomplete) list of static analysis tools for Java - ItDepends</title>
+<meta name=description content="ItDepends is a blog about various topics related to software engineering."><link rel=alternate type=application/rss+xml href=https://blog.adebski.com/posts/incomplete-list-of-static-analysis-tools-for-java/index.xml title=ItDepends><link rel=icon type=image/x-icon href=https://blog.adebski.com/favicon.ico><link rel=apple-touch-icon-precomposed href=https://blog.adebski.com/favicon.png><link rel=stylesheet href="https://blog.adebski.com/css/style.css?rnd=1741353953"><meta property="og:url" content="https://blog.adebski.com/posts/incomplete-list-of-static-analysis-tools-for-java/"><meta property="og:site_name" content="ItDepends"><meta property="og:title" content="An (incomplete) list of static analysis tools for Java"><meta property="og:description" content="This post describes some of the static analysis tools I’ve used in various Java projects over the years. In the last couple of days I’ve been setting up  projects from scratch and decided it would be nice to organize some of the knowledge in a single place. Apart from discussing the tools themselves I also describe why it makes sense to include them in your next (or current) project."><meta property="og:locale" content="en_us"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2021-05-22T00:00:00+00:00"><meta property="article:modified_time" content="2021-05-22T00:00:00+00:00"><meta name=twitter:card content="summary"><meta name=twitter:title content="An (incomplete) list of static analysis tools for Java"><meta name=twitter:description content="This post describes some of the static analysis tools I’ve used in various Java projects over the years. In the last couple of days I’ve been setting up  projects from scratch and decided it would be nice to organize some of the knowledge in a single place. Apart from discussing the tools themselves I also describe why it makes sense to include them in your next (or current) project."><link rel=stylesheet href=https://blog.adebski.com/css/overrides.min.273f022df8a1cc08098a95298e6a3f8946ad5089d3040667f6558f774d472a3b.css><script type=text/javascript src=https://blog.adebski.com/js/codeCopy.min.5353c462b0d40da2e3105de29e7877252c1ab2d82333d9869aa4127f1905a690.js></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-891PSZFW6E"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-891PSZFW6E")</script><link rel=alternate type=application/rss+xml href=https://blog.adebski.com//index.xml title="ItDepends Feed"></head><body><a class=skip-main href=#main>Skip to main content</a><div class=container><header><div class=site-header-div><h1 class=site-header><a href=/>ItDepends</a></h1><nav><a href=https://blog.adebski.com/posts/ title>Archive</a>
+<a href=https://blog.adebski.com/about/ title>About</a></nav></div></header><main id=main tabindex=-1><aside><nav id=TableOfContents><ol><li><a href=#defining-static-analysis>Defining static analysis</a></li><li><a href=#static-analysis-tools-for-java>Static analysis tools for Java</a><ol><li><a href=#spotbugs-previously-findbugs>SpotBugs, previously FindBugs</a><ol><li><a href=#configuring-spotbugs>Configuring SpotBugs</a></li></ol></li><li><a href=#error-prone>Error Prone</a><ol><li><a href=#configuring-error-prone>Configuring Error Prone</a></li></ol></li><li><a href=#pmd>PMD</a><ol><li><a href=#configuring-pmd>Configuring PMD</a></li></ol></li><li><a href=#checkstyle>Checkstyle</a><ol><li><a href=#configuring-checkstyle>Configuring Checkstyle</a></li></ol></li></ol></li><li><a href=#advantages-and-disadvantages-of-using-static-analysis>Advantages and disadvantages of using static analysis</a></li><li><a href=#conclusion>Conclusion</a></li></ol></nav></aside><article class=post><header><h1 class=post-title>An (incomplete) list of static analysis tools for Java</h1></header><div class=content><p>This post describes some of the static analysis tools I&rsquo;ve used in various Java projects over the years. In the last couple of days I&rsquo;ve been setting up new projects from scratch and decided it would be nice to organize some of the knowledge in a single place.
+Apart from discussing the tools themselves I also describe why it makes sense to include them in your next (or current) projects.</p><h1 id=defining-static-analysis>Defining static analysis</h1><p>Per the Wikipedia entry on <a href=https://en.wikipedia.org/wiki/Static_program_analysis>Static Program Analysis</a>:</p><blockquote><p>Static program analysis is the analysis of computer software that is performed without actually executing programs, in contrast with dynamic analysis, which is analysis performed on programs while they are executing.In most cases the analysis is performed on some version of the source code, and in the other cases, some form of the object code.</p><p>The term is usually applied to the analysis performed by an automated tool, with human analysis being called program understanding, program comprehension, or code review. Software inspections and software walkthroughs are also used in the latter case.</p></blockquote><p>In more practical terms, we&rsquo;d like to use a tool that understands the code (syntactically or semantically), looks at it from a certain angle (formatting, code &ldquo;quality&rdquo;), and either &ldquo;improves&rdquo; the code automatically or generates a report with suggestions. I&rsquo;m using words like &ldquo;quality&rdquo; and &ldquo;improves&rdquo; vaguely, there are some practices generally agreed upon (e.g. we should avoid single-letter variables or magical numbers) but those are not rules written in stone. We may decide, for whatever reason, that in the context of a specific project we would like to not follow some of the &ldquo;good practices&rdquo;.</p><h1 id=static-analysis-tools-for-java>Static analysis tools for Java</h1><p>Over the years multiple static analysis tools have been developed for the Java language. I briefly describe each tool I&rsquo;m familiar with below and what class of &ldquo;things&rdquo; it&rsquo;s looking for. You can find a Maven project <a href=https://github.com/Adebski/JavaStaticAnalysis>on my GitHub with</a> all of them configured.</p><h2 id=spotbugs-previously-findbugs>SpotBugs, previously FindBugs</h2><p><a href=https://spotbugs.github.io/>https://spotbugs.github.io/</a></p><p><a href=http://findbugs.sourceforge.net/>http://findbugs.sourceforge.net/</a></p><p>According to <a href=https://en.wikipedia.org/wiki/FindBugs>Wikipedia article on FindBugs</a> it was first released on 10.06.2006. For whatever reason, the development on the project stopped and the last stable release is <code>3.0.1</code> released on 06.03.2015. The spiritual successor to FindBugs is SpotBugs, according to <a href=https://spotbugs.github.io/>their website</a></p><blockquote><p>SpotBugs is a program which uses static analysis to look for bugs in Java code. It is free software, distributed under the terms of the GNU Lesser General Public License.</p><p>SpotBugs is the spiritual successor of FindBugs, carrying on from the point where it left off with the support of its community. Please check the official manual for details.</p></blockquote><p>SpotBugs has an <a href=https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html>extensive list of over 400 &ldquo;bugs&rdquo; they look for in your code</a>. The &ldquo;bugs&rdquo; recognized by the tool come from different categories, like bad practice, code correctness, or issues with multi-threaded code. Some &ldquo;bug&rdquo; examples include: dropping exceptions, defining only <code>hashCode</code> or <code>equals</code>, comparing strings using <code>==/!=</code> instead of <code>equals</code>, and incrementing a value in a <code>volatile</code> field.</p><p>SpotBugs checks are executed against the <code>.class</code> files so theoretically it can be used in any programming language available on JVM (e.g. Scala, Kotlin, Clojure) but I&rsquo;ve only seen it used in Java projects.</p><h3 id=configuring-spotbugs>Configuring SpotBugs</h3><p>SpotBugs executes all the checks by default, we don&rsquo;t need to provide an additional file which enables specific checks. There is also an option to provide a &ldquo;filter&rdquo; file where we can disable specific checks for a given piece of code (e.g. a class or a method), you can find an example &ldquo;filter&rdquo; file at the end of this section.</p><p><a href=https://spotbugs.readthedocs.io/en/latest/maven.html>SpotBugs documentation</a> shows how to integrate it with various build systems, e.g. Gradle, Maven, or Ant. In the case of Maven you only need to declare a SpotBugs plugin and you are good to go.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=display:flex><span><span style=color:#f92672>&lt;build&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&lt;plugins&gt;</span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e>&lt;!-- Based on https://spotbugs.readthedocs.io/en/latest/maven.html --&gt;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>&lt;plugin&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;groupId&gt;</span>com.github.spotbugs<span style=color:#f92672>&lt;/groupId&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;artifactId&gt;</span>spotbugs-maven-plugin<span style=color:#f92672>&lt;/artifactId&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;version&gt;</span>4.2.0<span style=color:#f92672>&lt;/version&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;dependencies&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#75715e>&lt;!-- overwrite dependency on spotbugs if you want to specify the version of spotbugs --&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;dependency&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;groupId&gt;</span>com.github.spotbugs<span style=color:#f92672>&lt;/groupId&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;artifactId&gt;</span>spotbugs<span style=color:#f92672>&lt;/artifactId&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;version&gt;</span>4.2.3<span style=color:#f92672>&lt;/version&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;/dependency&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;/dependencies&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;executions&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;execution&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;goals&gt;</span>
+</span></span><span style=display:flex><span>                        <span style=color:#f92672>&lt;goal&gt;</span>check<span style=color:#f92672>&lt;/goal&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;/goals&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;/execution&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;/executions&gt;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>&lt;/plugin&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&lt;/plugins&gt;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>&lt;/build&gt;</span></span></span></code></pre></td></tr></table></div></div><p>The above configuration adds a plugin to your project <code>pom.xml</code> and will automatically execute <a href=https://spotbugs.github.io/spotbugs-maven-plugin/check-mojo.html>the <code>check</code> goal as defined by the plugin</a> during the <code>verify</code> phase of Maven build. In practice, it means the SpotBugs check will be performed automatically if you execute <code>mvn verify</code>, <code>mvn install</code>, or <code>mvn deploy</code>.</p><p>Below you can see an example <code>mvn verify</code> output in a project that defines a class which overrides <code>equals</code> without overriding <code>hashCode</code>.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">26
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">27
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">28
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">29
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">30
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">31
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">32
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">33
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">34
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">35
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>adebski@adebski-VirtualBox:~/IdeaProjects/JavaStaticAnalysis$ mvn verify
+</span></span><span style=display:flex><span>...
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> &gt;&gt;&gt; spotbugs-maven-plugin:4.2.0:check <span style=color:#f92672>(</span>default<span style=color:#f92672>)</span> &gt; :spotbugs @ JavaStaticAnalysis &gt;&gt;&gt;
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> 
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> --- spotbugs-maven-plugin:4.2.0:spotbugs <span style=color:#f92672>(</span>spotbugs<span style=color:#f92672>)</span> @ JavaStaticAnalysis ---
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> Fork Value is true
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> Done SpotBugs Analysis....
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> 
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> <span style=color:#f92672>&lt;&lt;&lt;</span> spotbugs-maven-plugin:4.2.0:check <span style=color:#f92672>(</span>default<span style=color:#f92672>)</span> &lt; :spotbugs @ JavaStaticAnalysis <span style=color:#f92672>&lt;&lt;&lt;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> 
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> 
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> --- spotbugs-maven-plugin:4.2.0:check <span style=color:#f92672>(</span>default<span style=color:#f92672>)</span> @ JavaStaticAnalysis ---
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> BugInstance size is <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> Error size is <span style=color:#ae81ff>0</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> Total bugs: <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> High: com.adebski.HelloWorld$ProblematicClass defines equals and uses Object.hashCode<span style=color:#f92672>()</span> <span style=color:#f92672>[</span>com.adebski.HelloWorld$ProblematicClass<span style=color:#f92672>]</span> At HelloWorld.java:<span style=color:#f92672>[</span>lines 21-24<span style=color:#f92672>]</span> HE_EQUALS_USE_HASHCODE
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> 
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>To see bug detail using the Spotbugs GUI, use the following command <span style=color:#e6db74>&#34;mvn spotbugs:gui&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> ------------------------------------------------------------------------
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> BUILD FAILURE
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> ------------------------------------------------------------------------
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> Total time:  7.389 s
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> Finished at: 2021-05-06T20:45:34+01:00
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> ------------------------------------------------------------------------
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> Failed to execute goal com.github.spotbugs:spotbugs-maven-plugin:4.2.0:check <span style=color:#f92672>(</span>default<span style=color:#f92672>)</span> on project JavaStaticAnalysis: failed with <span style=color:#ae81ff>1</span> bugs and <span style=color:#ae81ff>0</span> errors  -&gt; <span style=color:#f92672>[</span>Help 1<span style=color:#f92672>]</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> 
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> To see the full stack trace of the errors, re-run Maven with the -e switch.
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> Re-run Maven using the -X switch to enable full debug logging.
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> 
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> For more information about the errors and possible solutions, please read the following articles:
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> <span style=color:#f92672>[</span>Help 1<span style=color:#f92672>]</span> http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException
+</span></span><span style=display:flex><span>adebski@adebski-VirtualBox:~/IdeaProjects/JavaStaticAnalysis$ </span></span></code></pre></td></tr></table></div></div><p>In the real world there are cases where we&rsquo;d like to inform the static analysis tool that some of the patterns should not apply to specific fragments of code (e.g. methods, classes). In SpotBugs we can configure an XML filter file where we specify patterns (e.g. class name) and a range of &ldquo;bugs&rdquo; that should be ignored for all places that match a given pattern. You can read more about the filters and see some examples in the <a href=https://spotbugs.readthedocs.io/en/stable/filter.html>official documentation</a>. The filter file below disables all checks for the class <code>com.adebski.HelloWorld$Bar</code> and &ldquo;bad practice&rdquo; bugs for <code>method</code> method in <code>com.adebski.HelloWorld$ProblematicClass</code>.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=display:flex><span><span style=color:#75715e>&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>&lt;FindBugsFilter</span>
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>xmlns=</span><span style=color:#e6db74>&#34;https://github.com/spotbugs/filter/3.0.0&#34;</span>
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>xmlns:xsi=</span><span style=color:#e6db74>&#34;http://www.w3.org/2001/XMLSchema-instance&#34;</span>
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>xsi:schemaLocation=</span><span style=color:#e6db74>&#34;https://github.com/spotbugs/filter/3.0.0 https://raw.githubusercontent.com/spotbugs/spotbugs/3.1.0/spotbugs/etc/findbugsfilter.xsd&#34;</span><span style=color:#f92672>&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&lt;Match&gt;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>&lt;Class</span> <span style=color:#a6e22e>name=</span><span style=color:#e6db74>&#34;com.adebski.HelloWorld$Bar&#34;</span> <span style=color:#f92672>/&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&lt;/Match&gt;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&lt;Match&gt;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>&lt;Class</span> <span style=color:#a6e22e>name=</span><span style=color:#e6db74>&#34;com.adebski.HelloWorld$ProblematicClass&#34;</span><span style=color:#f92672>/&gt;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>&lt;Method</span> <span style=color:#a6e22e>name=</span><span style=color:#e6db74>&#34;method&#34;</span> <span style=color:#f92672>/&gt;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>&lt;Bug</span> <span style=color:#a6e22e>code=</span><span style=color:#e6db74>&#34;BC&#34;</span> <span style=color:#f92672>/&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&lt;/Match&gt;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>&lt;/FindBugsFilter&gt;</span></span></span></code></pre></td></tr></table></div></div><h2 id=error-prone>Error Prone</h2><p><a href=https://github.com/google/error-prone>https://github.com/google/error-prone</a></p><p>Error Prone is a static code analyzer from Google. It&rsquo;s implemented as a <a href=https://docs.oracle.com/en/java/javase/11/docs/api/jdk.compiler/com/sun/source/util/Plugin.html>javac compiler plugin</a> so the checks are performed during the code compilation.</p><p>Error Prone can detect <a href=https://errorprone.info/bugpatterns>over 400 bug patterns</a> but only some of them are enabled as errors by default, the rest of them emit only warnings or they are marked as experimental and won&rsquo;t be executed unless an Error Prone plugin is configured to consider them. There is some overlap between patterns detected by SpotBugs and Error Prone but Error Prone offers additional checks that verify we are using some of the Google libraries (e.g. Guice or AutoValue) in a correct way.</p><h3 id=configuring-error-prone>Configuring Error Prone</h3><p>Because Error Prone is implemented as a javac plugin all we need to do is to modify the configuration of <code>maven-compiler-plugin</code> as per the <a href=https://errorprone.info/docs/installation>plugin documentation</a>. In the snippet below you can also see how to instruct the plugin to emit an error for a check that, by default, is treated only as a warning, e.g. <a href=https://errorprone.info/bugpattern/ComparableAndComparator>class should not implement both <code>Comparable</code> and <code>Comparator</code></a>. You can read more about the Maven integration <a href=http://errorprone.info/docs/flags#maven>here</a>, all of the command line flags are documented <a href=https://errorprone.info/docs/flags>here</a>.</p><p>From Java 16 we also need to make sure that Maven forks a separate JVM to run the <code>javac</code> compiler and we also need to add the <code>add-exports</code> and <code>add-opens</code> since Error Prone is accessing some of the private APIs to do its job, you can read more about <a href=https://openjdk.java.net/jeps/396>JEP 396: Strongly Encapsulate JDK Internals by Default</a> if you are curious. If you are using one of the previous Java versions you may see a warning emitted by the <code>javac</code> compiler that private APIs are being accessed and that access will be prohibited in the future.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">26
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">27
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">28
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">29
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">30
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">31
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">32
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">33
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">34
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">35
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">36
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">37
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">38
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">39
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">40
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=display:flex><span><span style=color:#f92672>&lt;build&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e>&lt;!-- Based on https://errorprone.info/docs/installation --&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&lt;plugin&gt;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>&lt;groupId&gt;</span>org.apache.maven.plugins<span style=color:#f92672>&lt;/groupId&gt;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>&lt;artifactId&gt;</span>maven-compiler-plugin<span style=color:#f92672>&lt;/artifactId&gt;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>&lt;version&gt;</span>3.8.1<span style=color:#f92672>&lt;/version&gt;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>&lt;configuration&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;source&gt;</span>11<span style=color:#f92672>&lt;/source&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;target&gt;</span>11<span style=color:#f92672>&lt;/target&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;fork&gt;</span>true<span style=color:#f92672>&lt;/fork&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;encoding&gt;</span>UTF-8<span style=color:#f92672>&lt;/encoding&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;compilerArgs&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;arg&gt;</span>-XDcompilePolicy=simple<span style=color:#f92672>&lt;/arg&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;arg&gt;</span>-Xplugin:ErrorProne -Xep:ComparableAndComparator:ERROR<span style=color:#f92672>&lt;/arg&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;arg&gt;</span>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED<span style=color:#f92672>&lt;/arg&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;arg&gt;</span>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED<span style=color:#f92672>&lt;/arg&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;arg&gt;</span>-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED<span style=color:#f92672>&lt;/arg&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;arg&gt;</span>-J--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED<span style=color:#f92672>&lt;/arg&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;arg&gt;</span>-J--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED<span style=color:#f92672>&lt;/arg&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;arg&gt;</span>-J--add-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED<span style=color:#f92672>&lt;/arg&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;arg&gt;</span>-J--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED<span style=color:#f92672>&lt;/arg&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;arg&gt;</span>-J--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED<span style=color:#f92672>&lt;/arg&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;arg&gt;</span>-J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED<span style=color:#f92672>&lt;/arg&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;arg&gt;</span>-J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED<span style=color:#f92672>&lt;/arg&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;/compilerArgs&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;annotationProcessorPaths&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;path&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;groupId&gt;</span>com.google.errorprone<span style=color:#f92672>&lt;/groupId&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;artifactId&gt;</span>error_prone_core<span style=color:#f92672>&lt;/artifactId&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;version&gt;</span>2.6.0<span style=color:#f92672>&lt;/version&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;/path&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#75715e>&lt;!-- Other annotation processors go here.
+</span></span></span><span style=display:flex><span><span style=color:#75715e>
+</span></span></span><span style=display:flex><span><span style=color:#75715e>                If &#39;annotationProcessorPaths&#39; is set, processors will no longer be
+</span></span></span><span style=display:flex><span><span style=color:#75715e>                discovered on the regular -classpath; see also &#39;Using Error Prone
+</span></span></span><span style=display:flex><span><span style=color:#75715e>                together with other annotation processors&#39; below. --&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;/annotationProcessorPaths&gt;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>&lt;/configuration&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&lt;/plugin&gt;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>&lt;/build&gt;</span></span></span></code></pre></td></tr></table></div></div><h2 id=pmd>PMD</h2><p><a href=https://pmd.github.io/>https://pmd.github.io/</a></p><p>PMD is an extensible cross-language static code analyzer, it &ldquo;understands&rdquo; languages like Java but it also has rules for things like Maven pom files, generic XMLs, or JSP files. It has over <a href=https://pmd.github.io/latest/pmd_rules_java.html>300 rules for Java alone</a>.</p><h3 id=configuring-pmd>Configuring PMD</h3><p>PMD handles rules differently than Error Prone or SpotBugs. By default, no rules are enabled and we need to construct an XML ruleset file ourselves. The good thing is that we don&rsquo;t need to reference each of the rules in our ruleset file directly, we can enable all rules from a specific category, e.g. <a href=https://pmd.github.io/pmd-6.34.0/pmd_rules_java_bestpractices.html>best practices</a>. We can also exclude specific files from analysis, but we are not able to disable only a subset of rules for a specific file.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=display:flex><span><span style=color:#75715e>&lt;?xml version=&#34;1.0&#34;?&gt;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>&lt;ruleset</span> <span style=color:#a6e22e>name=</span><span style=color:#e6db74>&#34;Custom Rules&#34;</span>
+</span></span><span style=display:flex><span>         <span style=color:#a6e22e>xmlns=</span><span style=color:#e6db74>&#34;http://pmd.sourceforge.net/ruleset/2.0.0&#34;</span>
+</span></span><span style=display:flex><span>         <span style=color:#a6e22e>xmlns:xsi=</span><span style=color:#e6db74>&#34;http://www.w3.org/2001/XMLSchema-instance&#34;</span>
+</span></span><span style=display:flex><span>         <span style=color:#a6e22e>xsi:schemaLocation=</span><span style=color:#e6db74>&#34;http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd&#34;</span><span style=color:#f92672>&gt;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&lt;description&gt;</span>
+</span></span><span style=display:flex><span>        Description of rules.
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&lt;/description&gt;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e>&lt;!-- Adding specific PMD rule --&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&lt;rule</span> <span style=color:#a6e22e>ref=</span><span style=color:#e6db74>&#34;category/java/errorprone.xml/EmptyCatchBlock&#34;</span> <span style=color:#f92672>/&gt;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e>&lt;!-- Adding all rules from a single category --&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&lt;rule</span> <span style=color:#a6e22e>ref=</span><span style=color:#e6db74>&#34;category/java/multithreading.xml&#34;</span> <span style=color:#f92672>/&gt;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&lt;exclude-pattern&gt;</span>.*/com/adebski/HelloWorld.*<span style=color:#f92672>&lt;/exclude-pattern&gt;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>&lt;/ruleset&gt;</span></span></span></code></pre></td></tr></table></div></div><p>Once we have our rule set file we need to add the PMD to our pom.xml file.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">26
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=display:flex><span><span style=color:#f92672>&lt;build&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&lt;plugins&gt;</span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e>&lt;!-- Based on https://pmd.github.io/pmd-6.34.0/pmd_userdocs_tools_maven.html --&gt;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>&lt;plugin&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;groupId&gt;</span>org.apache.maven.plugins<span style=color:#f92672>&lt;/groupId&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;artifactId&gt;</span>maven-pmd-plugin<span style=color:#f92672>&lt;/artifactId&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;version&gt;</span>3.13.0<span style=color:#f92672>&lt;/version&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;configuration&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#75715e>&lt;!-- failOnViolation is actually true by default, but can be disabled --&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;failOnViolation&gt;</span>true<span style=color:#f92672>&lt;/failOnViolation&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#75715e>&lt;!-- printFailingErrors is pretty useful --&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;printFailingErrors&gt;</span>true<span style=color:#f92672>&lt;/printFailingErrors&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;rulesets&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;ruleset&gt;</span>/pmd-ruleset.xml<span style=color:#f92672>&lt;/ruleset&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;/rulesets&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;/configuration&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;executions&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;execution&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;goals&gt;</span>
+</span></span><span style=display:flex><span>                        <span style=color:#f92672>&lt;goal&gt;</span>check<span style=color:#f92672>&lt;/goal&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;/goals&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;/execution&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;/executions&gt;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>&lt;/plugin&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&lt;/plugins&gt;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>&lt;/build&gt;</span></span></span></code></pre></td></tr></table></div></div><p>Now, the PMD will be executed as part of the <code>verify</code> goal, the same as SpotBugs.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">26
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">27
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">28
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">29
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>adebski@adebski-VirtualBox:~/IdeaProjects/JavaStaticAnalysis$ mvn verify
+</span></span><span style=display:flex><span>...
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> &gt;&gt;&gt; maven-pmd-plugin:3.13.0:check <span style=color:#f92672>(</span>default<span style=color:#f92672>)</span> &gt; :pmd @ JavaStaticAnalysis &gt;&gt;&gt;
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> 
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> --- maven-pmd-plugin:3.13.0:pmd <span style=color:#f92672>(</span>pmd<span style=color:#f92672>)</span> @ JavaStaticAnalysis ---
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>WARNING<span style=color:#f92672>]</span> Unable to locate Source XRef to link to - DISABLED
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>WARNING<span style=color:#f92672>]</span> Unable to locate Source XRef to link to - DISABLED
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>WARNING<span style=color:#f92672>]</span> File encoding has not been set, using platform encoding UTF-8, i.e. build is platform dependent!
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> 
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> <span style=color:#f92672>&lt;&lt;&lt;</span> maven-pmd-plugin:3.13.0:check <span style=color:#f92672>(</span>default<span style=color:#f92672>)</span> &lt; :pmd @ JavaStaticAnalysis <span style=color:#f92672>&lt;&lt;&lt;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> 
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> 
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> --- maven-pmd-plugin:3.13.0:check <span style=color:#f92672>(</span>default<span style=color:#f92672>)</span> @ JavaStaticAnalysis ---
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> PMD version: 6.21.0
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> PMD Failure: com.adebski.HelloWorld:13 Rule:EmptyCatchBlock Priority:3 Avoid empty catch blocks.
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> ------------------------------------------------------------------------
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> BUILD FAILURE
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> ------------------------------------------------------------------------
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> Total time:  10.770 s
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> Finished at: 2021-05-08T15:47:48+01:00
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>INFO<span style=color:#f92672>]</span> ------------------------------------------------------------------------
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> Failed to execute goal org.apache.maven.plugins:maven-pmd-plugin:3.13.0:check <span style=color:#f92672>(</span>default<span style=color:#f92672>)</span> on project JavaStaticAnalysis: You have <span style=color:#ae81ff>1</span> PMD violation. For more details see: /home/adebski/IdeaProjects/JavaStaticAnalysis/target/pmd.xml -&gt; <span style=color:#f92672>[</span>Help 1<span style=color:#f92672>]</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> 
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> To see the full stack trace of the errors, re-run Maven with the -e switch.
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> Re-run Maven using the -X switch to enable full debug logging.
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> 
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> For more information about the errors and possible solutions, please read the following articles:
+</span></span><span style=display:flex><span><span style=color:#f92672>[</span>ERROR<span style=color:#f92672>]</span> <span style=color:#f92672>[</span>Help 1<span style=color:#f92672>]</span> http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+</span></span><span style=display:flex><span>adebski@adebski-VirtualBox:~/IdeaProjects/JavaStaticAnalysis$ </span></span></code></pre></td></tr></table></div></div><h2 id=checkstyle>Checkstyle</h2><p><a href=https://checkstyle.sourceforge.io/>https://checkstyle.sourceforge.io/</a></p><p>Checkstyle is a tool we can use to make sure our source code adheres to a coding standard, this covers things like making sure the code is formatted consistently (e.g. placement of <code>{</code> characters, enforcing a line length) but also that it follows some of the &ldquo;best practices&rdquo;, e.g. <a href=https://checkstyle.sourceforge.io/config_design.html#MutableException>creating only immutable Exceptions</a> or that <a href=https://checkstyle.sourceforge.io/config_coding.html#StringLiteralEquality>Strings are compared using <code>equals</code> instead of <code>==</code></a>.</p><p>Checkstyle offers <a href=https://checkstyle.sourceforge.io/checks.html>more than 100 built-in style checks</a> and it&rsquo;s also possible to <a href=https://checkstyle.sourceforge.io/writingchecks.html>write your own checks</a>.</p><h3 id=configuring-checkstyle>Configuring Checkstyle</h3><p>Integrating Checkstyle with your Maven build is just a matter of adding <a href=http://maven.apache.org/plugins/maven-checkstyle-plugin/>Checkstyle Maven plugin</a> to your <code>pom.xml</code> file and specifying a Checkstyle xml configuration file. Checkstyle user guide <a href=https://checkstyle.sourceforge.io/config.html>has a whole section on how to write your configuration file</a> but you can also use one of the existing configurations as a starting point, e.g. <a href=https://checkstyle.sourceforge.io/google_style.html>Checkstyle configuration that follows recommendations from the Google&rsquo;s Java style guide</a>.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">26
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">27
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">28
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">29
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">30
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">31
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">32
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">33
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">34
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=display:flex><span><span style=color:#f92672>&lt;build&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&lt;plugins&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e>&lt;!-- based on http://maven.apache.org/plugins/maven-checkstyle-plugin/usage.html --&gt;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>&lt;plugin&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;groupId&gt;</span>org.apache.maven.plugins<span style=color:#f92672>&lt;/groupId&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;artifactId&gt;</span>maven-checkstyle-plugin<span style=color:#f92672>&lt;/artifactId&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;version&gt;</span>3.1.2<span style=color:#f92672>&lt;/version&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;configuration&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;configLocation&gt;</span>checkstyle.xml<span style=color:#f92672>&lt;/configLocation&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;encoding&gt;</span>UTF-8<span style=color:#f92672>&lt;/encoding&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;consoleOutput&gt;</span>true<span style=color:#f92672>&lt;/consoleOutput&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;failsOnError&gt;</span>true<span style=color:#f92672>&lt;/failsOnError&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;linkXRef&gt;</span>false<span style=color:#f92672>&lt;/linkXRef&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;/configuration&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#75715e>&lt;!-- explicitly specifying the newest (at the time) Checkstyle version --&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;dependencies&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;dependency&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;groupId&gt;</span>com.puppycrawl.tools<span style=color:#f92672>&lt;/groupId&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;artifactId&gt;</span>checkstyle<span style=color:#f92672>&lt;/artifactId&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;version&gt;</span>8.42<span style=color:#f92672>&lt;/version&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;/dependency&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;/dependencies&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;executions&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;execution&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;id&gt;</span>validate<span style=color:#f92672>&lt;/id&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;phase&gt;</span>validate<span style=color:#f92672>&lt;/phase&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;goals&gt;</span>
+</span></span><span style=display:flex><span>                        <span style=color:#f92672>&lt;goal&gt;</span>check<span style=color:#f92672>&lt;/goal&gt;</span>
+</span></span><span style=display:flex><span>                    <span style=color:#f92672>&lt;/goals&gt;</span>
+</span></span><span style=display:flex><span>                <span style=color:#f92672>&lt;/execution&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>&lt;/executions&gt;</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>&lt;/plugin&gt;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&lt;/plugins&gt;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>&lt;/build&gt;</span></span></span></code></pre></td></tr></table></div></div><p>To suppress a specific check for a given section of our code we need to use one of the <a href=https://checkstyle.sourceforge.io/config_filters.html>Checkstyle suppression filters</a>.
+For example we can configure <a href=https://checkstyle.sourceforge.io/config_filters.html#SuppressionCommentFilter>SuppressionCommentFilter</a> to mark a block of code with special comments to disable specific checks, there is also an option to specify a suppression file using the <a href=https://checkstyle.sourceforge.io/config_filters.html#SuppressionFilter>SuppressionFilter</a>. The suppression file is an XML document where we configure which checks should be disabled for what classes or their specific parts.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=display:flex><span><span style=color:#75715e>&lt;?xml version=&#34;1.0&#34;?&gt;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>&lt;!DOCTYPE suppressions PUBLIC
+</span></span></span><span style=display:flex><span><span style=color:#75715e>  &#34;-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN&#34;
+</span></span></span><span style=display:flex><span><span style=color:#75715e>  &#34;https://checkstyle.org/dtds/suppressions_1_2.dtd&#34;&gt;</span>
+</span></span><span style=display:flex><span><span style=color:#75715e>&lt;!-- taken from https://checkstyle.sourceforge.io/config_filters.html#SuppressionFilter --&gt;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>&lt;suppressions&gt;</span>
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&lt;suppress</span> <span style=color:#a6e22e>checks=</span><span style=color:#e6db74>&#34;JavadocStyleCheck&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>files=</span><span style=color:#e6db74>&#34;AbstractComplexityCheck.java&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>lines=</span><span style=color:#e6db74>&#34;82,108-122&#34;</span><span style=color:#f92672>/&gt;</span>
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&lt;suppress</span> <span style=color:#a6e22e>checks=</span><span style=color:#e6db74>&#34;MagicNumberCheck&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>files=</span><span style=color:#e6db74>&#34;JavadocStyleCheck.java&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>lines=</span><span style=color:#e6db74>&#34;221&#34;</span><span style=color:#f92672>/&gt;</span>
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&lt;suppress</span> <span style=color:#a6e22e>message=</span><span style=color:#e6db74>&#34;Missing a Javadoc comment&#34;</span><span style=color:#f92672>/&gt;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>&lt;/suppressions&gt;</span></span></span></code></pre></td></tr></table></div></div><p>Additionally there are a lot of Checkstyle plugins available <a href=https://checkstyle.sourceforge.io/index.html#Related_Tools>for various IDEs</a>, e.g. <a href=https://github.com/jshiell/checkstyle-idea>jshiell/checkstyle-idea</a> for IntelliJ. One nice feature of the IntelliJ Checkstyle plugin is the ability to configure the IntelliJ code formatter based on your Checkstyle configuration. You can find instructions on how to do that in <a href=https://stackoverflow.com/questions/14539313/intellij-idea-code-format-from-checkstyle-configuration/35273850#35273850>this Stack Overflow post</a>.</p><h1 id=advantages-and-disadvantages-of-using-static-analysis>Advantages and disadvantages of using static analysis</h1><p>Intuitively it &ldquo;makes sense&rdquo; to use tools and automation for:</p><ul><li>detecting as early as possible, a class of bugs/problems that apply to &ldquo;most&rdquo; software engineering projects,</li><li>keeping the code style/formatting consistent in a single project or all the projects maintained by the team.</li></ul><p>Without automating those tasks we rely on humans to catch all problems in the code review process and, from my experience, some things always slip through the cracks. Not all team members may be aware of every convention, especially if a team is compromised of people who joined after the project was started (which is a very common situation) or are new to the company. When reviewing &ldquo;large&rdquo; code reviews it may be exhausting and discouraging to point out every little discrepancy with the style guides and conventions and it wastes the mental cycles of the reviewer who should be looking for bugs and issues with the business logic or at larger architectural decisions.</p><p>When we use a programming language or a technology we are not very familiar with it&rsquo;s easy to use it in a non-idiomatic way or introduce bugs to our system. We don&rsquo;t always have the luxury of having a person in our team (or organization) who we can consult on the way we use a technology. Static analysis tools help us avoid at least some of the potential issues that happen when we try to use something new. It&rsquo;s also a learning opportunity, when a static analysis flags a part of code due to an error we were not even aware of. In the future there is a higher chance of us avoiding writing a code like that altogether. We may also start to be aware of classes of bugs we did not consider before, e.g. SQL Injection.</p><p>It&rsquo;s important to keep the signal to noise ratio at the acceptable level. If we introduce a static analysis to an existing project and we are presented with hundreds or thousands of &ldquo;issues&rdquo; each time we build our software we will most likely just ignore them, what&rsquo;s the difference between 1004 and 1005 potential errors? Static analysis also increases the time it takes to build/compile the project. If the new tool we try to integrate increases the build time to an unacceptable levels (and this depends on a project and our baseline) we should weigh in the value that the tool brings vs the decrease in developer productivity.</p><p>If we integrate static analysis in our project we should incorporate the checks with our build scripts and systems so that the analysis is always performed as part of the build; otherwise, it will be easy to forget (or not even know) that you need to run an additional command to verify that everything meets the quality bar agreed by the team.
+Additionally, those checks should be executed again in our CI/CD pipelines to catch guard against (hopefully rare) situations where someone ignores the errors and just pushes the code hopping for the best. The checks should be treated as errors and fail the build, once we have a couple of violations in the project it&rsquo;s hard to distinguish if the umpteenth warning is an actual issue or not. That&rsquo;s also why tools offer a way to suppress or disable specific checks or rules for a given piece of code, from time to time there are genuine situations where the code needs to violate one rule, but those situations should be rare. If we need to disable a specific check for most of our code we should think about removing the rule altogether.</p><p>Out of curiosity I&rsquo;ve gooled for papers about the usefulness of static analysis tools for languages like Java and C++:</p><ul><li><a href=https://ieeexplore.ieee.org/document/8681007>Q. Ashfaq, R. Khan and S. Farooq, &ldquo;A Comparative Analysis of Static Code Analysis Tools that check Java Code Adherence to Java Coding Standards,&rdquo; 2019 2nd International Conference on Communication, Computing and Digital systems (C-CODE), 2019, pp. 98-103, doi: 10.1109/C-CODE.2019.8681007.</a>,</li><li><a href=https://www.researchgate.net/publication/332228434_A_Comparative_Analysis_of_Static_Code_Analysis_Tools_that_check_Java_Code_Adherence_to_Java_Coding_Standards>Ashfaq, Qirat & Khan, Rimsha & Farooq, Sehrish. (2019). A Comparative Analysis of Static Code Analysis Tools that check Java Code Adherence to Java Coding Standards. 98-103. 10.1109/C-CODE.2019.8681007.</a>,</li><li><a href=https://www.researchgate.net/publication/263674072_A_Review_of_Static_Analysis_Approaches_for_Programming_Exercises>Striewe, Michael & Goedicke, Michael. (2014). A Review of Static Analysis Approaches for Programming Exercises. 439. 10.1007/978-3-319-08657-6_10.</a>,</li><li><a href=https://dl.acm.org/doi/10.1145/3188720>Caitlin Sadowski, Edward Aftandilian, Alex Eagle, Liam Miller-Cushon, and Ciera Jaspan. 2018. Lessons from building static analysis tools at Google. Commun. ACM 61, 4 (April 2018), 58–66. DOI:https://doi.org/10.1145/3188720</a>,</li><li><a href=https://arxiv.org/abs/1805.09040>Rahma Mahmood and Qusay H. Mahmoud (2018). Evaluation of Static Analysis Tools for Finding Vulnerabilities in Java and C/C++ Source Code. CoRR, abs/1805.09040.</a>.</li></ul><p>Here are some of the takeaways from the papers above:</p><ul><li>No static analysis tools are perfect and can catch all the issues, for better coverage we should try and use more than one, even if there is some overlap between them.</li><li>Static analysis needs to be integrated into the developer workflow and the software build process. When Google initially tried to integrate FindBugs into their process, by scanning the code base nightly and posting a bug dashboard, it saw little use because the dashboard was not part of the developer&rsquo;s usual workflow.</li><li><a href=https://pitest.org/>PITEST</a> can be used to perform mutation testing on our code, basically checking if our unit tests fail if the source code is modified according to some rules (e.g. changing the if statement form <code>a >= b</code> to <code>a > b</code>). The assumption is that when the application code changes, it should produce different results and cause the unit tests to fail. If a unit test does not fail in this situation, it may indicate an issue with the test suite.</li></ul><h1 id=conclusion>Conclusion</h1><p>I feel that static analysis tools are useful tools that should be integrated into the developer workflow and the software build process. They help to catch bugs and errors at the language level and they make sure that our/team&rsquo;s code meets a specific quality bar. When reviewing a code review we may safely assume that the configured class of bugs is absent from the code and we can focus on finding more subtle bugs, reviewing architectural decisions and making sure that the code fulfills business requirements.</p></div><div class=post-info><div class=post-date>2021-05-22</div><div class=post-taxonomies></div></div></article><div id=disqus_thread></div><script>window.disqus_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//ItDepends.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}()</script><noscript>Please enable JavaScript to view the <a href=https://disqus.com/?ref_noscript>comments powered by Disqus.</a></noscript><a href=https://disqus.com class=dsq-brlink>comments powered by <span class=logo-disqus>Disqus</span></a></main><footer><p>Powered by <a target=_blank href=https://gohugo.io/>Hugo</a>, theme <a target=_blank href=https://github.com/mitrichius/hugo-theme-anubis>Anubis</a>.</p></footer></div></body></html>

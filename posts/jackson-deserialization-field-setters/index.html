@@ -1,229 +1,229 @@
-<!doctype html><html lang=en-us><head><meta charset=utf-8><meta name=HandheldFriendly content="True"><meta name=viewport content="width=device-width,initial-scale=1"><meta name=referrer content="no-referrer-when-downgrade"><title>JSON deserialization to custom objects with Jackson part 1 - fields - ItDepends</title><meta name=description content="ItDepends is a blog about various topics related to software engineering."><link rel=alternate type=application/rss+xml href=https://blog.adebski.com/posts/jackson-deserialization-field-setters/index.xml title=ItDepends><link rel=icon type=image/x-icon href=https://blog.adebski.com/favicon.ico><link rel=apple-touch-icon-precomposed href=https://blog.adebski.com/favicon.png><link rel=stylesheet href="https://blog.adebski.com/css/style.css?rnd=1640642555"><meta property="og:title" content="JSON deserialization to custom objects with Jackson part 1 - fields"><meta property="og:description" content="This is the first post in the series where I look at the most common mechanisms Jackson uses to deserialize JSON document and represent it as a custom type.
-In this post, I focus on cases where Jackson uses a no-arg constructor to instantiate the class and values are injected directly to fields."><meta property="og:type" content="article"><meta property="og:url" content="https://blog.adebski.com/posts/jackson-deserialization-field-setters/"><meta property="article:published_time" content="2021-12-25T00:00:00+00:00"><meta property="article:modified_time" content="2021-12-25T00:00:00+00:00"><meta name=twitter:card content="summary"><meta name=twitter:title content="JSON deserialization to custom objects with Jackson part 1 - fields"><meta name=twitter:description content="This is the first post in the series where I look at the most common mechanisms Jackson uses to deserialize JSON document and represent it as a custom type.
-In this post, I focus on cases where Jackson uses a no-arg constructor to instantiate the class and values are injected directly to fields."><link rel=stylesheet href=https://blog.adebski.com/css/overrides.min.273f022df8a1cc08098a95298e6a3f8946ad5089d3040667f6558f774d472a3b.css><script type=text/javascript src=https://blog.adebski.com/js/codeCopy.min.2b00952f6ea130b03f4b78d28f0482acae3baf40e221dff738ab8c1332d6cbb7.js></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-891PSZFW6E"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
-gtag('js',new Date());gtag('config','G-891PSZFW6E');</script><link rel=alternate type=application/rss+xml href=https://blog.adebski.com//index.xml title="ItDepends Feed"></head><body><a class=skip-main href=#main>Skip to main content</a><div class=container><header><div class=site-header-div><h1 class=site-header><a href=/>ItDepends</a></h1><nav><a href=https://blog.adebski.com/posts/>Archive</a>
-<a href=https://blog.adebski.com/about/>About</a></nav></div></header><main id=main tabindex=-1><aside><nav id=TableOfContents><ol><li><a href=#no-arg-constructor-and-field-injection>No-arg constructor and field injection</a><ol><li><a href=#public-mutable-fields>Public, mutable fields</a></li><li><a href=#private-mutable-fields>Private, mutable fields</a></li><li><a href=#final-fields>Final fields</a></li></ol></li><li><a href=#conclusion>Conclusion</a></li></ol></nav></aside><article class=post><header><h1 class=post-title>JSON deserialization to custom objects with Jackson part 1 - fields</h1></header><div class=content><p><a href=https://github.com/FasterXML/jackson>Jackson</a> is one of the most popular libraries (at least according to GitHub stars)
+<!doctype html><html lang=en-us><head><meta charset=utf-8><meta name=HandheldFriendly content="True"><meta name=viewport content="width=device-width,initial-scale=1"><meta name=referrer content="no-referrer-when-downgrade"><title>JSON deserialization to custom objects with Jackson part 1 - fields - ItDepends</title>
+<meta name=description content="ItDepends is a blog about various topics related to software engineering."><link rel=alternate type=application/rss+xml href=https://blog.adebski.com/posts/jackson-deserialization-field-setters/index.xml title=ItDepends><link rel=icon type=image/x-icon href=https://blog.adebski.com/favicon.ico><link rel=apple-touch-icon-precomposed href=https://blog.adebski.com/favicon.png><link rel=stylesheet href="https://blog.adebski.com/css/style.css?rnd=1741353953"><meta property="og:url" content="https://blog.adebski.com/posts/jackson-deserialization-field-setters/"><meta property="og:site_name" content="ItDepends"><meta property="og:title" content="JSON deserialization to custom objects with Jackson part 1 - fields"><meta property="og:description" content="This is the first post in the series where I look at the most common mechanisms Jackson uses to deserialize JSON document and represent it as a custom type.
+In this post, I focus on cases where Jackson uses a no-arg constructor to instantiate the class and values are injected directly to fields."><meta property="og:locale" content="en_us"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2021-12-25T00:00:00+00:00"><meta property="article:modified_time" content="2021-12-25T00:00:00+00:00"><meta name=twitter:card content="summary"><meta name=twitter:title content="JSON deserialization to custom objects with Jackson part 1 - fields"><meta name=twitter:description content="This is the first post in the series where I look at the most common mechanisms Jackson uses to deserialize JSON document and represent it as a custom type.
+In this post, I focus on cases where Jackson uses a no-arg constructor to instantiate the class and values are injected directly to fields."><link rel=stylesheet href=https://blog.adebski.com/css/overrides.min.273f022df8a1cc08098a95298e6a3f8946ad5089d3040667f6558f774d472a3b.css><script type=text/javascript src=https://blog.adebski.com/js/codeCopy.min.5353c462b0d40da2e3105de29e7877252c1ab2d82333d9869aa4127f1905a690.js></script><script async src="https://www.googletagmanager.com/gtag/js?id=G-891PSZFW6E"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-891PSZFW6E")</script><link rel=alternate type=application/rss+xml href=https://blog.adebski.com//index.xml title="ItDepends Feed"></head><body><a class=skip-main href=#main>Skip to main content</a><div class=container><header><div class=site-header-div><h1 class=site-header><a href=/>ItDepends</a></h1><nav><a href=https://blog.adebski.com/posts/ title>Archive</a>
+<a href=https://blog.adebski.com/about/ title>About</a></nav></div></header><main id=main tabindex=-1><aside><nav id=TableOfContents><ol><li><a href=#no-arg-constructor-and-field-injection>No-arg constructor and field injection</a><ol><li><a href=#public-mutable-fields>Public, mutable fields</a></li><li><a href=#private-mutable-fields>Private, mutable fields</a></li><li><a href=#final-fields>Final fields</a></li></ol></li><li><a href=#conclusion>Conclusion</a></li></ol></nav></aside><article class=post><header><h1 class=post-title>JSON deserialization to custom objects with Jackson part 1 - fields</h1></header><div class=content><p><a href=https://github.com/FasterXML/jackson>Jackson</a> is one of the most popular libraries (at least according to GitHub stars)
 used to handle a variety of tasks related to the JSON format in Java. Among other things Jackson can parse
 a JSON file and represent it in memory as an instance of the provided class.
 Of course, as long as the structure of data in the file corresponds to the structure of the class.</p><p>In all of the examples below, I&rsquo;ve used the same JSON file that I&rsquo;ve tried to deserialize to classes with various field
-modifiers and methods. All of the examples are available <a href=https://github.com/Adebski/JacksonDeserializationOverview>on my GitHub</a>.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">2
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">3
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">4
-</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json>{
-  <span style=color:#f92672>&#34;name&#34;</span>: <span style=color:#e6db74>&#34;fooName&#34;</span>,
-  <span style=color:#f92672>&#34;age&#34;</span>: <span style=color:#ae81ff>23</span>
-}</code></pre></td></tr></table></div></div><h1 id=no-arg-constructor-and-field-injection>No-arg constructor and field injection</h1><p>Jackson uses Java reflection under the hood to construct an instance of a given class and then inject values from the
+modifiers and methods. All of the examples are available <a href=https://github.com/Adebski/JacksonDeserializationOverview>on my GitHub</a>.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">4
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;name&#34;</span>: <span style=color:#e6db74>&#34;fooName&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;age&#34;</span>: <span style=color:#ae81ff>23</span>
+</span></span><span style=display:flex><span>}</span></span></code></pre></td></tr></table></div></div><h1 id=no-arg-constructor-and-field-injection>No-arg constructor and field injection</h1><p>Jackson uses Java reflection under the hood to construct an instance of a given class and then inject values from the
 JSON document to the created instance.</p><p>By default, Jackson requires a no-arg constructor to instantiate a class. Then the values are injected into fields directly
 (if they are public) or through a corresponding setter method. If we don&rsquo;t provide any additional
 information to Jackson the declared field names in our class must match field names in the JSON file. The setters follow
 the <code>setX</code> convention.</p><h2 id=public-mutable-fields>Public, mutable fields</h2><p>When our class has a no-arg constructor and public fields that are not <code>final</code> the deserialization process is straightforward
-and we don&rsquo;t need to configure the <code>ObjectMapper</code> in any special way.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
-</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#f92672>package</span> com.adebski.jackson<span style=color:#f92672>;</span>
-
-<span style=color:#f92672>import</span> java.util.Objects<span style=color:#f92672>;</span>
-
-<span style=color:#66d9ef>public</span> <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>PersonPublicFieldsNoArgConstructor</span> <span style=color:#f92672>{</span>
-    <span style=color:#66d9ef>public</span> <span style=color:#a6e22e>PersonPublicFieldsNoArgConstructor</span><span style=color:#f92672>()</span> <span style=color:#f92672>{</span>
-        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;PersonPublicFieldsNoArgConstructor constructor&#34;</span><span style=color:#f92672>);</span>
-    <span style=color:#f92672>}</span>
-
-    <span style=color:#66d9ef>public</span> String name<span style=color:#f92672>;</span>
-    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>int</span> age<span style=color:#f92672>;</span>
-
-     <span style=color:#75715e>// equals, hashCode, toString, extra methods...
-</span><span style=color:#75715e></span><span style=color:#f92672>}</span></code></pre></td></tr></table></div></div><p>Jackson detects the <code>name</code> and <code>age</code> fields in the class, calls the no-arg constructor through reflection, and injects
-values directly into the fields (also through reflection).</p><p>This is verified by the following unit test.<div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
-</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java>    <span style=color:#a6e22e>@Test</span>
-    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>deserializeWithPublicFieldsNoArgConstructor</span><span style=color:#f92672>()</span> <span style=color:#66d9ef>throws</span> IOException <span style=color:#f92672>{</span>
-        PersonPublicFieldsNoArgConstructor deserializedValue <span style=color:#f92672>=</span>
-            objectMapper<span style=color:#f92672>.</span><span style=color:#a6e22e>readValue</span><span style=color:#f92672>(</span>getSamplePersonFileURL<span style=color:#f92672>(),</span> PersonPublicFieldsNoArgConstructor<span style=color:#f92672>.</span><span style=color:#a6e22e>class</span><span style=color:#f92672>);</span>
-
-        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span>deserializedValue<span style=color:#f92672>);</span>
-        PersonPublicFieldsNoArgConstructor expectedValue <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> PersonPublicFieldsNoArgConstructor<span style=color:#f92672>();</span>
-        expectedValue<span style=color:#f92672>.</span><span style=color:#a6e22e>name</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;fooName&#34;</span><span style=color:#f92672>;</span>
-        expectedValue<span style=color:#f92672>.</span><span style=color:#a6e22e>age</span> <span style=color:#f92672>=</span> 23<span style=color:#f92672>;</span>
-        Assertions<span style=color:#f92672>.</span><span style=color:#a6e22e>assertEquals</span><span style=color:#f92672>(</span>expectedValue<span style=color:#f92672>,</span> deserializedValue<span style=color:#f92672>);</span>
-    <span style=color:#f92672>}</span></code></pre></td></tr></table></div></div></p><h2 id=private-mutable-fields>Private, mutable fields</h2><p>Things get more interesting if we have a class with <code>private</code> fields that are still mutable.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
-</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#f92672>package</span> com.adebski.jackson<span style=color:#f92672>;</span>
-
-<span style=color:#f92672>import</span> java.util.Objects<span style=color:#f92672>;</span>
-
-<span style=color:#66d9ef>public</span> <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>PersonPrivateFieldsNoArgConstructor</span> <span style=color:#f92672>{</span>
-
-    <span style=color:#66d9ef>public</span> <span style=color:#a6e22e>PersonPrivateFieldsNoArgConstructor</span><span style=color:#f92672>()</span> <span style=color:#f92672>{</span>
-        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;PersonPrivateFieldsNoArgConstructor constructor&#34;</span><span style=color:#f92672>);</span>
-    <span style=color:#f92672>}</span>
-
-    <span style=color:#66d9ef>private</span> String name<span style=color:#f92672>;</span>
-    <span style=color:#66d9ef>private</span> <span style=color:#66d9ef>int</span> age<span style=color:#f92672>;</span>
-
-    <span style=color:#a6e22e>@Override</span>
-    <span style=color:#66d9ef>public</span> String <span style=color:#a6e22e>toString</span><span style=color:#f92672>()</span> <span style=color:#f92672>{</span>
-        <span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;PersonPrivateFieldsNoArgConstructor{&#34;</span> <span style=color:#f92672>+</span>
-            <span style=color:#e6db74>&#34;name=&#39;&#34;</span> <span style=color:#f92672>+</span> name <span style=color:#f92672>+</span> <span style=color:#e6db74>&#39;\&#39;&#39;</span> <span style=color:#f92672>+</span>
-            <span style=color:#e6db74>&#34;, age=&#34;</span> <span style=color:#f92672>+</span> age <span style=color:#f92672>+</span>
-            <span style=color:#e6db74>&#39;}&#39;</span><span style=color:#f92672>;</span>
-    <span style=color:#f92672>}</span>
-        
-    <span style=color:#75715e>// equals, hashCode, toString, extra methods...
-</span><span style=color:#75715e></span><span style=color:#f92672>}</span></code></pre></td></tr></table></div></div><p>By default, Jackson does not
+and we don&rsquo;t need to configure the <code>ObjectMapper</code> in any special way.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#f92672>package</span> com.adebski.jackson;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> java.util.Objects;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>public</span> <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>PersonPublicFieldsNoArgConstructor</span> {
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> <span style=color:#a6e22e>PersonPublicFieldsNoArgConstructor</span>() {
+</span></span><span style=display:flex><span>        System.<span style=color:#a6e22e>out</span>.<span style=color:#a6e22e>println</span>(<span style=color:#e6db74>&#34;PersonPublicFieldsNoArgConstructor constructor&#34;</span>);
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> String name;
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>int</span> age;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>     <span style=color:#75715e>// equals, hashCode, toString, extra methods...</span>
+</span></span><span style=display:flex><span>}</span></span></code></pre></td></tr></table></div></div><p>Jackson detects the <code>name</code> and <code>age</code> fields in the class, calls the no-arg constructor through reflection, and injects
+values directly into the fields (also through reflection).</p><p>This is verified by the following unit test.<div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span>    <span style=color:#a6e22e>@Test</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>deserializeWithPublicFieldsNoArgConstructor</span>() <span style=color:#66d9ef>throws</span> IOException {
+</span></span><span style=display:flex><span>        PersonPublicFieldsNoArgConstructor deserializedValue <span style=color:#f92672>=</span>
+</span></span><span style=display:flex><span>            objectMapper.<span style=color:#a6e22e>readValue</span>(getSamplePersonFileURL(), PersonPublicFieldsNoArgConstructor.<span style=color:#a6e22e>class</span>);
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        System.<span style=color:#a6e22e>out</span>.<span style=color:#a6e22e>println</span>(deserializedValue);
+</span></span><span style=display:flex><span>        PersonPublicFieldsNoArgConstructor expectedValue <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> PersonPublicFieldsNoArgConstructor();
+</span></span><span style=display:flex><span>        expectedValue.<span style=color:#a6e22e>name</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;fooName&#34;</span>;
+</span></span><span style=display:flex><span>        expectedValue.<span style=color:#a6e22e>age</span> <span style=color:#f92672>=</span> 23;
+</span></span><span style=display:flex><span>        Assertions.<span style=color:#a6e22e>assertEquals</span>(expectedValue, deserializedValue);
+</span></span><span style=display:flex><span>    }</span></span></code></pre></td></tr></table></div></div></p><h2 id=private-mutable-fields>Private, mutable fields</h2><p>Things get more interesting if we have a class with <code>private</code> fields that are still mutable.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#f92672>package</span> com.adebski.jackson;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> java.util.Objects;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>public</span> <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>PersonPrivateFieldsNoArgConstructor</span> {
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> <span style=color:#a6e22e>PersonPrivateFieldsNoArgConstructor</span>() {
+</span></span><span style=display:flex><span>        System.<span style=color:#a6e22e>out</span>.<span style=color:#a6e22e>println</span>(<span style=color:#e6db74>&#34;PersonPrivateFieldsNoArgConstructor constructor&#34;</span>);
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>private</span> String name;
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>private</span> <span style=color:#66d9ef>int</span> age;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>@Override</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> String <span style=color:#a6e22e>toString</span>() {
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;PersonPrivateFieldsNoArgConstructor{&#34;</span> <span style=color:#f92672>+</span>
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;name=&#39;&#34;</span> <span style=color:#f92672>+</span> name <span style=color:#f92672>+</span> <span style=color:#e6db74>&#39;\&#39;&#39;</span> <span style=color:#f92672>+</span>
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;, age=&#34;</span> <span style=color:#f92672>+</span> age <span style=color:#f92672>+</span>
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#39;}&#39;</span>;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>        
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// equals, hashCode, toString, extra methods...</span>
+</span></span><span style=display:flex><span>}</span></span></code></pre></td></tr></table></div></div><p>By default, Jackson does not
 &ldquo;see&rdquo; non-public fields and throws a <code>com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException</code> exception.
 The standard behavior of an <code>ObjectMapper</code> is to throw if a property from a JSON file does not have a corresponding
-property in the provided class.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
-</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java>    <span style=color:#a6e22e>@Test</span>
-    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>deserializeWithPrivateFieldsNoArgConstructor</span><span style=color:#f92672>()</span> <span style=color:#66d9ef>throws</span> IOException <span style=color:#f92672>{</span>
-        UnrecognizedPropertyException unrecognizedPropertyException <span style=color:#f92672>=</span> Assertions<span style=color:#f92672>.</span><span style=color:#a6e22e>assertThrows</span><span style=color:#f92672>(</span>
-            UnrecognizedPropertyException<span style=color:#f92672>.</span><span style=color:#a6e22e>class</span><span style=color:#f92672>,</span>
-            <span style=color:#f92672>()</span> <span style=color:#f92672>-&gt;</span> objectMapper<span style=color:#f92672>.</span><span style=color:#a6e22e>readValue</span><span style=color:#f92672>(</span>getSamplePersonFileURL<span style=color:#f92672>(),</span> PersonPrivateFieldsNoArgConstructor<span style=color:#f92672>.</span><span style=color:#a6e22e>class</span><span style=color:#f92672>)</span>
-        <span style=color:#f92672>);</span>
-
-        String expectedMessagePrefix <span style=color:#f92672>=</span>
-            <span style=color:#e6db74>&#34;Unrecognized field \&#34;name\&#34; (class com.adebski.jackson.PersonPrivateFieldsNoArgConstructor), not marked as ignorable (0 known properties: ])&#34;</span><span style=color:#f92672>;</span>
-        Assertions<span style=color:#f92672>.</span><span style=color:#a6e22e>assertTrue</span><span style=color:#f92672>(</span>
-            unrecognizedPropertyException<span style=color:#f92672>.</span><span style=color:#a6e22e>getMessage</span><span style=color:#f92672>().</span><span style=color:#a6e22e>startsWith</span><span style=color:#f92672>(</span>expectedMessagePrefix<span style=color:#f92672>)</span>
-        <span style=color:#f92672>);</span>
-    <span style=color:#f92672>}</span>
-<span style=color:#f92672>}</span></code></pre></td></tr></table></div></div><p>On the other hand, we can configure our <code>ObjectMapper</code> to consider fields with visibility modifiers
-other than <code>public</code> for field injection.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">2
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">3
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">4
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">5
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">6
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">7
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">8
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">9
-</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java>    <span style=color:#a6e22e>@Test</span>
-    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>deserializeWithPrivateFieldsNoArgConstructorWithAdditionalConfig</span><span style=color:#f92672>()</span> <span style=color:#66d9ef>throws</span> IOException <span style=color:#f92672>{</span>
-        objectMapper<span style=color:#f92672>.</span><span style=color:#a6e22e>setVisibility</span><span style=color:#f92672>(</span>PropertyAccessor<span style=color:#f92672>.</span><span style=color:#a6e22e>FIELD</span><span style=color:#f92672>,</span> JsonAutoDetect<span style=color:#f92672>.</span><span style=color:#a6e22e>Visibility</span><span style=color:#f92672>.</span><span style=color:#a6e22e>ANY</span><span style=color:#f92672>);</span>
-
-        PersonPrivateFieldsNoArgConstructor deserializedValue <span style=color:#f92672>=</span>
-            objectMapper<span style=color:#f92672>.</span><span style=color:#a6e22e>readValue</span><span style=color:#f92672>(</span>getSamplePersonFileURL<span style=color:#f92672>(),</span> PersonPrivateFieldsNoArgConstructor<span style=color:#f92672>.</span><span style=color:#a6e22e>class</span><span style=color:#f92672>);</span>
-        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span>deserializedValue<span style=color:#f92672>);</span>
-        Assertions<span style=color:#f92672>.</span><span style=color:#a6e22e>assertEquals</span><span style=color:#f92672>(</span>PersonPrivateFieldsNoArgConstructor<span style=color:#f92672>.</span><span style=color:#a6e22e>getExpectedValue</span><span style=color:#f92672>(),</span> deserializedValue<span style=color:#f92672>);</span>
-    <span style=color:#f92672>}</span></code></pre></td></tr></table></div></div><p><a href=https://www.javadoc.io/doc/com.fasterxml.jackson.core/jackson-annotations/2.12.2/com/fasterxml/jackson/annotation/JsonAutoDetect.Visibility.html>Here</a>
+property in the provided class.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span>    <span style=color:#a6e22e>@Test</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>deserializeWithPrivateFieldsNoArgConstructor</span>() <span style=color:#66d9ef>throws</span> IOException {
+</span></span><span style=display:flex><span>        UnrecognizedPropertyException unrecognizedPropertyException <span style=color:#f92672>=</span> Assertions.<span style=color:#a6e22e>assertThrows</span>(
+</span></span><span style=display:flex><span>            UnrecognizedPropertyException.<span style=color:#a6e22e>class</span>,
+</span></span><span style=display:flex><span>            () <span style=color:#f92672>-&gt;</span> objectMapper.<span style=color:#a6e22e>readValue</span>(getSamplePersonFileURL(), PersonPrivateFieldsNoArgConstructor.<span style=color:#a6e22e>class</span>)
+</span></span><span style=display:flex><span>        );
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        String expectedMessagePrefix <span style=color:#f92672>=</span>
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;Unrecognized field \&#34;name\&#34; (class com.adebski.jackson.PersonPrivateFieldsNoArgConstructor), not marked as ignorable (0 known properties: ])&#34;</span>;
+</span></span><span style=display:flex><span>        Assertions.<span style=color:#a6e22e>assertTrue</span>(
+</span></span><span style=display:flex><span>            unrecognizedPropertyException.<span style=color:#a6e22e>getMessage</span>().<span style=color:#a6e22e>startsWith</span>(expectedMessagePrefix)
+</span></span><span style=display:flex><span>        );
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>}</span></span></code></pre></td></tr></table></div></div><p>On the other hand, we can configure our <code>ObjectMapper</code> to consider fields with visibility modifiers
+other than <code>public</code> for field injection.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">9
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span>    <span style=color:#a6e22e>@Test</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>deserializeWithPrivateFieldsNoArgConstructorWithAdditionalConfig</span>() <span style=color:#66d9ef>throws</span> IOException {
+</span></span><span style=display:flex><span>        objectMapper.<span style=color:#a6e22e>setVisibility</span>(PropertyAccessor.<span style=color:#a6e22e>FIELD</span>, JsonAutoDetect.<span style=color:#a6e22e>Visibility</span>.<span style=color:#a6e22e>ANY</span>);
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        PersonPrivateFieldsNoArgConstructor deserializedValue <span style=color:#f92672>=</span>
+</span></span><span style=display:flex><span>            objectMapper.<span style=color:#a6e22e>readValue</span>(getSamplePersonFileURL(), PersonPrivateFieldsNoArgConstructor.<span style=color:#a6e22e>class</span>);
+</span></span><span style=display:flex><span>        System.<span style=color:#a6e22e>out</span>.<span style=color:#a6e22e>println</span>(deserializedValue);
+</span></span><span style=display:flex><span>        Assertions.<span style=color:#a6e22e>assertEquals</span>(PersonPrivateFieldsNoArgConstructor.<span style=color:#a6e22e>getExpectedValue</span>(), deserializedValue);
+</span></span><span style=display:flex><span>    }</span></span></code></pre></td></tr></table></div></div><p><a href=https://www.javadoc.io/doc/com.fasterxml.jackson.core/jackson-annotations/2.12.2/com/fasterxml/jackson/annotation/JsonAutoDetect.Visibility.html>Here</a>
 is a JavaDoc with all the possible values of <code>com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility</code>.</p><h2 id=final-fields>Final fields</h2><p>Since we already know that Jackson can inject into <code>private</code> fields I&rsquo;ll focus only on the <code>final</code> fields that are also <code>public</code>.
-All things in this section apply regardless of the field visibility modifier.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">26
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">27
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">28
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">29
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">30
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">31
-</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#f92672>package</span> com.adebski.jackson<span style=color:#f92672>;</span>
-
-<span style=color:#f92672>import</span> java.util.Objects<span style=color:#f92672>;</span>
-
-<span style=color:#66d9ef>public</span> <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>PersonPublicFieldsFinalNoArgsConstructor</span> <span style=color:#f92672>{</span>
-
-    <span style=color:#66d9ef>public</span> <span style=color:#a6e22e>PersonPublicFieldsFinalNoArgsConstructor</span><span style=color:#f92672>()</span> <span style=color:#f92672>{</span>
-        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;PersonPublicFieldsFinalNoArgsConstructor constructor&#34;</span><span style=color:#f92672>);</span>
-    <span style=color:#f92672>}</span>
-
-    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>final</span> String name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;initialValue&#34;</span><span style=color:#f92672>;</span>
-    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>int</span> age <span style=color:#f92672>=</span> <span style=color:#f92672>-</span>25<span style=color:#f92672>;</span>
-
-    <span style=color:#66d9ef>public</span> String <span style=color:#a6e22e>getName</span><span style=color:#f92672>()</span> <span style=color:#f92672>{</span>
-        <span style=color:#66d9ef>return</span> name<span style=color:#f92672>;</span>
-    <span style=color:#f92672>}</span>
-
-    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>int</span> <span style=color:#a6e22e>getAge</span><span style=color:#f92672>()</span> <span style=color:#f92672>{</span>
-        <span style=color:#66d9ef>return</span> age<span style=color:#f92672>;</span>
-    <span style=color:#f92672>}</span>
-
-    <span style=color:#a6e22e>@Override</span>
-    <span style=color:#66d9ef>public</span> String <span style=color:#a6e22e>toString</span><span style=color:#f92672>()</span> <span style=color:#f92672>{</span>
-        <span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;PersonPublicFieldsFinalNoArgsConstructor{&#34;</span> <span style=color:#f92672>+</span>
-            <span style=color:#e6db74>&#34;name=&#39;&#34;</span> <span style=color:#f92672>+</span> name <span style=color:#f92672>+</span> <span style=color:#e6db74>&#39;\&#39;&#39;</span> <span style=color:#f92672>+</span>
-            <span style=color:#e6db74>&#34;, age=&#34;</span> <span style=color:#f92672>+</span> age <span style=color:#f92672>+</span>
-            <span style=color:#e6db74>&#39;}&#39;</span><span style=color:#f92672>;</span>
-    <span style=color:#f92672>}</span>
-    
-    <span style=color:#75715e>// equals, hashCode
-</span><span style=color:#75715e></span><span style=color:#f92672>}</span></code></pre></td></tr></table></div></div><p>Our initial assumption may be that Jackson should not be able to modify fields declared as <code>final</code> in our class,
+All things in this section apply regardless of the field visibility modifier.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">26
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">27
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">28
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">29
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">30
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">31
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#f92672>package</span> com.adebski.jackson;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> java.util.Objects;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>public</span> <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>PersonPublicFieldsFinalNoArgsConstructor</span> {
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> <span style=color:#a6e22e>PersonPublicFieldsFinalNoArgsConstructor</span>() {
+</span></span><span style=display:flex><span>        System.<span style=color:#a6e22e>out</span>.<span style=color:#a6e22e>println</span>(<span style=color:#e6db74>&#34;PersonPublicFieldsFinalNoArgsConstructor constructor&#34;</span>);
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>final</span> String name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;initialValue&#34;</span>;
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>int</span> age <span style=color:#f92672>=</span> <span style=color:#f92672>-</span>25;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> String <span style=color:#a6e22e>getName</span>() {
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> name;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>int</span> <span style=color:#a6e22e>getAge</span>() {
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> age;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>@Override</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> String <span style=color:#a6e22e>toString</span>() {
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;PersonPublicFieldsFinalNoArgsConstructor{&#34;</span> <span style=color:#f92672>+</span>
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;name=&#39;&#34;</span> <span style=color:#f92672>+</span> name <span style=color:#f92672>+</span> <span style=color:#e6db74>&#39;\&#39;&#39;</span> <span style=color:#f92672>+</span>
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;, age=&#34;</span> <span style=color:#f92672>+</span> age <span style=color:#f92672>+</span>
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#39;}&#39;</span>;
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// equals, hashCode</span>
+</span></span><span style=display:flex><span>}</span></span></code></pre></td></tr></table></div></div><p>Our initial assumption may be that Jackson should not be able to modify fields declared as <code>final</code> in our class,
 but it turns out that&rsquo;s false. Under the hood Jackson modifies fields through one of the <code>set</code> methods of the
 <code>java.lang.reflect.Field</code> class. Below is an excerpt
 from the <a href=https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/reflect/Field.html#set(java.lang.Object,java.lang.Object)><code>set</code> method Javadoc</a>.</p><blockquote><p>If the underlying field is final, the method throws an IllegalAccessException unless setAccessible(true) has succeeded
@@ -243,182 +243,181 @@ at compile time with the value of the constant expression.</p></blockquote><p>If
 the no-arg constructor explicitly) those values are &ldquo;constant variables&rdquo; by Java
 language (as per <a href=https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.12.4>4.12.4 point of the JLS</a>.
 In compile-time <code>javac</code> replaces references to such fields with an actual value. We can observe that by using
-the <a href=https://docs.oracle.com/en/java/javase/11/tools/javap.html>javap</a> utility provided by the JDK.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">26
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">27
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">28
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">29
-</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>javap -p -v target/classes/com/adebski/jackson/PersonPublicFieldsFinalNoArgsConstructor.class
-...
-// We can see that in the byte code generated <span style=color:#66d9ef>for</span> the getter a constant value is returned
-  public java.lang.String getName<span style=color:#f92672>()</span>;
-    descriptor: <span style=color:#f92672>()</span>Ljava/lang/String;
-    flags: <span style=color:#f92672>(</span>0x0001<span style=color:#f92672>)</span> ACC_PUBLIC
-    Code:
-      stack<span style=color:#f92672>=</span>1, locals<span style=color:#f92672>=</span>1, args_size<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span>
-         0: ldc           <span style=color:#75715e>#2                  // String initialValue</span>
-         2: areturn
-      LineNumberTable:
-        line 15: <span style=color:#ae81ff>0</span>
-      LocalVariableTable:
-        Start  Length  Slot  Name   Signature
-            <span style=color:#ae81ff>0</span>       <span style=color:#ae81ff>3</span>     <span style=color:#ae81ff>0</span>  this   Lcom/adebski/jackson/PersonPublicFieldsFinalNoArgsConstructor;
-...
-// And the toString always returns the same value, regardless of the actual value of the fields
-  public java.lang.String toString<span style=color:#f92672>()</span>;
-    descriptor: <span style=color:#f92672>()</span>Ljava/lang/String;
-    flags: <span style=color:#f92672>(</span>0x0001<span style=color:#f92672>)</span> ACC_PUBLIC
-    Code:
-      stack<span style=color:#f92672>=</span>1, locals<span style=color:#f92672>=</span>1, args_size<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span>
-         0: ldc           <span style=color:#75715e>#9                  // String PersonPublicFieldsFinalNoArgsConstructor{name=\&#39;initialValue\&#39;, age=-25}</span>
-         2: areturn
-      LineNumberTable:
-        line 24: <span style=color:#ae81ff>0</span>
-      LocalVariableTable:
-        Start  Length  Slot  Name   Signature
-            <span style=color:#ae81ff>0</span>       <span style=color:#ae81ff>3</span>     <span style=color:#ae81ff>0</span>  this   Lcom/adebski/jackson/PersonPublicFieldsFinalNoArgsConstructor;</code></pre></td></tr></table></div></div><p>If we deserialize our JSON document as <code>PersonPublicFieldsFinalNoArgsConstructor</code> we get some surprising results.
+the <a href=https://docs.oracle.com/en/java/javase/11/tools/javap.html>javap</a> utility provided by the JDK.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">26
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">27
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">28
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">29
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>javap -p -v target/classes/com/adebski/jackson/PersonPublicFieldsFinalNoArgsConstructor.class
+</span></span><span style=display:flex><span>...
+</span></span><span style=display:flex><span>// We can see that in the byte code generated <span style=color:#66d9ef>for</span> the getter a constant value is returned
+</span></span><span style=display:flex><span>  public java.lang.String getName<span style=color:#f92672>()</span>;
+</span></span><span style=display:flex><span>    descriptor: <span style=color:#f92672>()</span>Ljava/lang/String;
+</span></span><span style=display:flex><span>    flags: <span style=color:#f92672>(</span>0x0001<span style=color:#f92672>)</span> ACC_PUBLIC
+</span></span><span style=display:flex><span>    Code:
+</span></span><span style=display:flex><span>      stack<span style=color:#f92672>=</span>1, locals<span style=color:#f92672>=</span>1, args_size<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>         0: ldc           <span style=color:#75715e>#2                  // String initialValue</span>
+</span></span><span style=display:flex><span>         2: areturn
+</span></span><span style=display:flex><span>      LineNumberTable:
+</span></span><span style=display:flex><span>        line 15: <span style=color:#ae81ff>0</span>
+</span></span><span style=display:flex><span>      LocalVariableTable:
+</span></span><span style=display:flex><span>        Start  Length  Slot  Name   Signature
+</span></span><span style=display:flex><span>            <span style=color:#ae81ff>0</span>       <span style=color:#ae81ff>3</span>     <span style=color:#ae81ff>0</span>  this   Lcom/adebski/jackson/PersonPublicFieldsFinalNoArgsConstructor;
+</span></span><span style=display:flex><span>...
+</span></span><span style=display:flex><span>// And the toString always returns the same value, regardless of the actual value of the fields
+</span></span><span style=display:flex><span>  public java.lang.String toString<span style=color:#f92672>()</span>;
+</span></span><span style=display:flex><span>    descriptor: <span style=color:#f92672>()</span>Ljava/lang/String;
+</span></span><span style=display:flex><span>    flags: <span style=color:#f92672>(</span>0x0001<span style=color:#f92672>)</span> ACC_PUBLIC
+</span></span><span style=display:flex><span>    Code:
+</span></span><span style=display:flex><span>      stack<span style=color:#f92672>=</span>1, locals<span style=color:#f92672>=</span>1, args_size<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>         0: ldc           <span style=color:#75715e>#9                  // String PersonPublicFieldsFinalNoArgsConstructor{name=\&#39;initialValue\&#39;, age=-25}</span>
+</span></span><span style=display:flex><span>         2: areturn
+</span></span><span style=display:flex><span>      LineNumberTable:
+</span></span><span style=display:flex><span>        line 24: <span style=color:#ae81ff>0</span>
+</span></span><span style=display:flex><span>      LocalVariableTable:
+</span></span><span style=display:flex><span>        Start  Length  Slot  Name   Signature
+</span></span><span style=display:flex><span>            <span style=color:#ae81ff>0</span>       <span style=color:#ae81ff>3</span>     <span style=color:#ae81ff>0</span>  this   Lcom/adebski/jackson/PersonPublicFieldsFinalNoArgsConstructor;</span></span></code></pre></td></tr></table></div></div><p>If we deserialize our JSON document as <code>PersonPublicFieldsFinalNoArgsConstructor</code> we get some surprising results.
 Because getters and <code>toString</code> methods have the initial values hardcoded in the
 byte-code the instance returned by the <code>ObjectMapper</code> &ldquo;behaves&rdquo; as if it hasn&rsquo;t been modified during deserialization.
 At the same time if we access the fields through reflection (or even in IntelliJ debugger) we will see that Jackson
-correctly updated the fields.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">26
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">27
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">28
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">29
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">30
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">31
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">32
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">33
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">34
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">35
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">36
-</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java>    <span style=color:#a6e22e>@Test</span>
-    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>deserializeWithPersonPublicFieldsFinalNoArgsConstructorDefaultConfiguration</span><span style=color:#f92672>()</span> <span style=color:#66d9ef>throws</span> IOException <span style=color:#f92672>{</span>
-        PersonPublicFieldsFinalNoArgsConstructor deserializedValue <span style=color:#f92672>=</span>
-            objectMapper<span style=color:#f92672>.</span><span style=color:#a6e22e>readValue</span><span style=color:#f92672>(</span>getSamplePersonFileURL<span style=color:#f92672>(),</span> PersonPublicFieldsFinalNoArgsConstructor<span style=color:#f92672>.</span><span style=color:#a6e22e>class</span><span style=color:#f92672>);</span>
-        PersonPublicFieldsFinalNoArgsConstructor manuallyConstructedValue <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> PersonPublicFieldsFinalNoArgsConstructor<span style=color:#f92672>();</span>
-        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;Deserialized value: &#34;</span> <span style=color:#f92672>+</span> deserializedValue<span style=color:#f92672>);</span>
-        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;Manually constructed value: &#34;</span> <span style=color:#f92672>+</span> manuallyConstructedValue<span style=color:#f92672>);</span>
-
-        Assertions<span style=color:#f92672>.</span><span style=color:#a6e22e>assertEquals</span><span style=color:#f92672>(</span>
-            manuallyConstructedValue<span style=color:#f92672>,</span>
-            deserializedValue
-        <span style=color:#f92672>);</span>
-        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span>
-            String<span style=color:#f92672>.</span><span style=color:#a6e22e>format</span><span style=color:#f92672>(</span>
-                <span style=color:#e6db74>&#34;Actual name &#39;%s&#39; actual age &#39;%d&#39;&#34;</span><span style=color:#f92672>,</span>
-                getNameThroughReflection<span style=color:#f92672>(</span>deserializedValue<span style=color:#f92672>),</span>
-                getAgeThroughReflection<span style=color:#f92672>(</span>deserializedValue<span style=color:#f92672>)</span>
-            <span style=color:#f92672>)</span>
-        <span style=color:#f92672>);</span>
-        Assertions<span style=color:#f92672>.</span><span style=color:#a6e22e>assertEquals</span><span style=color:#f92672>(</span>
-            getNameThroughReflection<span style=color:#f92672>(</span>manuallyConstructedValue<span style=color:#f92672>),</span>
-            manuallyConstructedValue<span style=color:#f92672>.</span><span style=color:#a6e22e>getName</span><span style=color:#f92672>()</span>
-        <span style=color:#f92672>);</span>
-        Assertions<span style=color:#f92672>.</span><span style=color:#a6e22e>assertEquals</span><span style=color:#f92672>(</span>
-            getAgeThroughReflection<span style=color:#f92672>(</span>manuallyConstructedValue<span style=color:#f92672>),</span>
-            manuallyConstructedValue<span style=color:#f92672>.</span><span style=color:#a6e22e>getAge</span><span style=color:#f92672>()</span>
-        <span style=color:#f92672>);</span>
-        Assertions<span style=color:#f92672>.</span><span style=color:#a6e22e>assertNotEquals</span><span style=color:#f92672>(</span>
-            getNameThroughReflection<span style=color:#f92672>(</span>deserializedValue<span style=color:#f92672>),</span>
-            deserializedValue<span style=color:#f92672>.</span><span style=color:#a6e22e>getName</span><span style=color:#f92672>()</span>
-        <span style=color:#f92672>);</span>
-        Assertions<span style=color:#f92672>.</span><span style=color:#a6e22e>assertNotEquals</span><span style=color:#f92672>(</span>
-            getAgeThroughReflection<span style=color:#f92672>(</span>deserializedValue<span style=color:#f92672>),</span>
-            deserializedValue<span style=color:#f92672>.</span><span style=color:#a6e22e>getAge</span><span style=color:#f92672>()</span>
-        <span style=color:#f92672>);</span>
-    <span style=color:#f92672>}</span></code></pre></td></tr></table></div></div><p>The test prints</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">2
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">3
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">4
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">5
-</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java>PersonPublicFieldsFinalNoArgsConstructor constructor
-PersonPublicFieldsFinalNoArgsConstructor constructor
-Deserialized value<span style=color:#f92672>:</span> PersonPublicFieldsFinalNoArgsConstructor<span style=color:#f92672>{</span>name<span style=color:#f92672>=</span><span style=color:#960050;background-color:#1e0010>&#39;</span>initialValue<span style=color:#960050;background-color:#1e0010>&#39;</span><span style=color:#f92672>,</span> age<span style=color:#f92672>=-</span>25<span style=color:#f92672>}</span>
-Manually constructed value<span style=color:#f92672>:</span> PersonPublicFieldsFinalNoArgsConstructor<span style=color:#f92672>{</span>name<span style=color:#f92672>=</span><span style=color:#960050;background-color:#1e0010>&#39;</span>initialValue<span style=color:#960050;background-color:#1e0010>&#39;</span><span style=color:#f92672>,</span> age<span style=color:#f92672>=-</span>25<span style=color:#f92672>}</span>
-Actual name <span style=color:#960050;background-color:#1e0010>&#39;</span>fooName<span style=color:#960050;background-color:#1e0010>&#39;</span> actual age <span style=color:#960050;background-color:#1e0010>&#39;</span>23<span style=color:#960050;background-color:#1e0010>&#39;</span></code></pre></td></tr></table></div></div><p>We can configure our <code>ObjectMapper</code> to ignore <code>final</code> fields during deserialization if we&rsquo;d like to avoid this
+correctly updated the fields.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">26
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">27
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">28
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">29
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">30
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">31
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">32
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">33
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">34
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">35
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">36
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span>    <span style=color:#a6e22e>@Test</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>deserializeWithPersonPublicFieldsFinalNoArgsConstructorDefaultConfiguration</span>() <span style=color:#66d9ef>throws</span> IOException {
+</span></span><span style=display:flex><span>        PersonPublicFieldsFinalNoArgsConstructor deserializedValue <span style=color:#f92672>=</span>
+</span></span><span style=display:flex><span>            objectMapper.<span style=color:#a6e22e>readValue</span>(getSamplePersonFileURL(), PersonPublicFieldsFinalNoArgsConstructor.<span style=color:#a6e22e>class</span>);
+</span></span><span style=display:flex><span>        PersonPublicFieldsFinalNoArgsConstructor manuallyConstructedValue <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> PersonPublicFieldsFinalNoArgsConstructor();
+</span></span><span style=display:flex><span>        System.<span style=color:#a6e22e>out</span>.<span style=color:#a6e22e>println</span>(<span style=color:#e6db74>&#34;Deserialized value: &#34;</span> <span style=color:#f92672>+</span> deserializedValue);
+</span></span><span style=display:flex><span>        System.<span style=color:#a6e22e>out</span>.<span style=color:#a6e22e>println</span>(<span style=color:#e6db74>&#34;Manually constructed value: &#34;</span> <span style=color:#f92672>+</span> manuallyConstructedValue);
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        Assertions.<span style=color:#a6e22e>assertEquals</span>(
+</span></span><span style=display:flex><span>            manuallyConstructedValue,
+</span></span><span style=display:flex><span>            deserializedValue
+</span></span><span style=display:flex><span>        );
+</span></span><span style=display:flex><span>        System.<span style=color:#a6e22e>out</span>.<span style=color:#a6e22e>println</span>(
+</span></span><span style=display:flex><span>            String.<span style=color:#a6e22e>format</span>(
+</span></span><span style=display:flex><span>                <span style=color:#e6db74>&#34;Actual name &#39;%s&#39; actual age &#39;%d&#39;&#34;</span>,
+</span></span><span style=display:flex><span>                getNameThroughReflection(deserializedValue),
+</span></span><span style=display:flex><span>                getAgeThroughReflection(deserializedValue)
+</span></span><span style=display:flex><span>            )
+</span></span><span style=display:flex><span>        );
+</span></span><span style=display:flex><span>        Assertions.<span style=color:#a6e22e>assertEquals</span>(
+</span></span><span style=display:flex><span>            getNameThroughReflection(manuallyConstructedValue),
+</span></span><span style=display:flex><span>            manuallyConstructedValue.<span style=color:#a6e22e>getName</span>()
+</span></span><span style=display:flex><span>        );
+</span></span><span style=display:flex><span>        Assertions.<span style=color:#a6e22e>assertEquals</span>(
+</span></span><span style=display:flex><span>            getAgeThroughReflection(manuallyConstructedValue),
+</span></span><span style=display:flex><span>            manuallyConstructedValue.<span style=color:#a6e22e>getAge</span>()
+</span></span><span style=display:flex><span>        );
+</span></span><span style=display:flex><span>        Assertions.<span style=color:#a6e22e>assertNotEquals</span>(
+</span></span><span style=display:flex><span>            getNameThroughReflection(deserializedValue),
+</span></span><span style=display:flex><span>            deserializedValue.<span style=color:#a6e22e>getName</span>()
+</span></span><span style=display:flex><span>        );
+</span></span><span style=display:flex><span>        Assertions.<span style=color:#a6e22e>assertNotEquals</span>(
+</span></span><span style=display:flex><span>            getAgeThroughReflection(deserializedValue),
+</span></span><span style=display:flex><span>            deserializedValue.<span style=color:#a6e22e>getAge</span>()
+</span></span><span style=display:flex><span>        );
+</span></span><span style=display:flex><span>    }</span></span></code></pre></td></tr></table></div></div><p>The test prints</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">5
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span>PersonPublicFieldsFinalNoArgsConstructor constructor
+</span></span><span style=display:flex><span>PersonPublicFieldsFinalNoArgsConstructor constructor
+</span></span><span style=display:flex><span>Deserialized value: PersonPublicFieldsFinalNoArgsConstructor{name<span style=color:#f92672>=</span><span style=color:#960050;background-color:#1e0010>&#39;</span>initialValue<span style=color:#960050;background-color:#1e0010>&#39;</span>, age<span style=color:#f92672>=-</span>25}
+</span></span><span style=display:flex><span>Manually constructed value: PersonPublicFieldsFinalNoArgsConstructor{name<span style=color:#f92672>=</span><span style=color:#960050;background-color:#1e0010>&#39;</span>initialValue<span style=color:#960050;background-color:#1e0010>&#39;</span>, age<span style=color:#f92672>=-</span>25}
+</span></span><span style=display:flex><span>Actual name <span style=color:#960050;background-color:#1e0010>&#39;</span>fooName<span style=color:#960050;background-color:#1e0010>&#39;</span> actual age <span style=color:#960050;background-color:#1e0010>&#39;</span>23<span style=color:#960050;background-color:#1e0010>&#39;</span></span></span></code></pre></td></tr></table></div></div><p>We can configure our <code>ObjectMapper</code> to ignore <code>final</code> fields during deserialization if we&rsquo;d like to avoid this
 &ldquo;surprising behavior&rdquo; by setting the <code>ALLOW_FINAL_FIELDS_AS_MUTATORS</code> mapper feature to <code>false</code>. Then
-the deserialization results in <code>UnrecognizedPropertyException</code> because Jackson can&rsquo;t find the fields to inject values to.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
-</span><span style="margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
-</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java>    <span style=color:#a6e22e>@Test</span>
-    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>deserializeWithPersonPublicFieldsFinalNoArgsConstructorDoNotModifyFinalFields</span><span style=color:#f92672>()</span> <span style=color:#66d9ef>throws</span> IOException <span style=color:#f92672>{</span>
-        objectMapper<span style=color:#f92672>.</span><span style=color:#a6e22e>configure</span><span style=color:#f92672>(</span>MapperFeature<span style=color:#f92672>.</span><span style=color:#a6e22e>ALLOW_FINAL_FIELDS_AS_MUTATORS</span><span style=color:#f92672>,</span> <span style=color:#66d9ef>false</span><span style=color:#f92672>);</span>
-
-        UnrecognizedPropertyException unrecognizedPropertyException <span style=color:#f92672>=</span> Assertions<span style=color:#f92672>.</span><span style=color:#a6e22e>assertThrows</span><span style=color:#f92672>(</span>
-            UnrecognizedPropertyException<span style=color:#f92672>.</span><span style=color:#a6e22e>class</span><span style=color:#f92672>,</span>
-            <span style=color:#f92672>()</span> <span style=color:#f92672>-&gt;</span> objectMapper<span style=color:#f92672>.</span><span style=color:#a6e22e>readValue</span><span style=color:#f92672>(</span>getSamplePersonFileURL<span style=color:#f92672>(),</span> PersonPublicFieldsFinalNoArgsConstructor<span style=color:#f92672>.</span><span style=color:#a6e22e>class</span><span style=color:#f92672>),</span>
-            <span style=color:#e6db74>&#34;Unrecognized field \&#34;name\&#34; (class com.adebski.jackson.PersonPublicFieldsFinalNoArgsConstructor), not marked as ignorable (0 known properties: ])&#34;</span>
-        <span style=color:#f92672>);</span>
-
-        String expectedMessagePrefix <span style=color:#f92672>=</span>
-            <span style=color:#e6db74>&#34;Unrecognized field \&#34;name\&#34; (class com.adebski.jackson.PersonPublicFieldsFinalNoArgsConstructor), not marked as ignorable (0 known properties: ])&#34;</span><span style=color:#f92672>;</span>
-        Assertions<span style=color:#f92672>.</span><span style=color:#a6e22e>assertTrue</span><span style=color:#f92672>(</span>
-            unrecognizedPropertyException<span style=color:#f92672>.</span><span style=color:#a6e22e>getMessage</span><span style=color:#f92672>().</span><span style=color:#a6e22e>startsWith</span><span style=color:#f92672>(</span>expectedMessagePrefix<span style=color:#f92672>)</span>
-        <span style=color:#f92672>);</span>
-    <span style=color:#f92672>}</span></code></pre></td></tr></table></div></div><h1 id=conclusion>Conclusion</h1><p>Jackson default behavior is to use a no-arg constructor and try to find a way of injecting values to fields one by one. This
+the deserialization results in <code>UnrecognizedPropertyException</code> because Jackson can&rsquo;t find the fields to inject values to.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span>    <span style=color:#a6e22e>@Test</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>deserializeWithPersonPublicFieldsFinalNoArgsConstructorDoNotModifyFinalFields</span>() <span style=color:#66d9ef>throws</span> IOException {
+</span></span><span style=display:flex><span>        objectMapper.<span style=color:#a6e22e>configure</span>(MapperFeature.<span style=color:#a6e22e>ALLOW_FINAL_FIELDS_AS_MUTATORS</span>, <span style=color:#66d9ef>false</span>);
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        UnrecognizedPropertyException unrecognizedPropertyException <span style=color:#f92672>=</span> Assertions.<span style=color:#a6e22e>assertThrows</span>(
+</span></span><span style=display:flex><span>            UnrecognizedPropertyException.<span style=color:#a6e22e>class</span>,
+</span></span><span style=display:flex><span>            () <span style=color:#f92672>-&gt;</span> objectMapper.<span style=color:#a6e22e>readValue</span>(getSamplePersonFileURL(), PersonPublicFieldsFinalNoArgsConstructor.<span style=color:#a6e22e>class</span>),
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;Unrecognized field \&#34;name\&#34; (class com.adebski.jackson.PersonPublicFieldsFinalNoArgsConstructor), not marked as ignorable (0 known properties: ])&#34;</span>
+</span></span><span style=display:flex><span>        );
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        String expectedMessagePrefix <span style=color:#f92672>=</span>
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;Unrecognized field \&#34;name\&#34; (class com.adebski.jackson.PersonPublicFieldsFinalNoArgsConstructor), not marked as ignorable (0 known properties: ])&#34;</span>;
+</span></span><span style=display:flex><span>        Assertions.<span style=color:#a6e22e>assertTrue</span>(
+</span></span><span style=display:flex><span>            unrecognizedPropertyException.<span style=color:#a6e22e>getMessage</span>().<span style=color:#a6e22e>startsWith</span>(expectedMessagePrefix)
+</span></span><span style=display:flex><span>        );
+</span></span><span style=display:flex><span>    }</span></span></code></pre></td></tr></table></div></div><h1 id=conclusion>Conclusion</h1><p>Jackson default behavior is to use a no-arg constructor and try to find a way of injecting values to fields one by one. This
 may or may not be the behavior we want. We&rsquo;ve also seen that letting Jackson modify <code>final</code> fields can lead to subtle
 bugs which may be hard to track down and understand.</p><p>In the next post, I&rsquo;ll describe the setter injection and highlight some differences between field injection
-and setter injection.</p></div><div class=post-info><div class=post-date>2021-12-25</div><div class=post-taxonomies></div></div></article><div id=disqus_thread></div><script type=application/javascript>var disqus_config=function(){};(function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById('disqus_thread').innerHTML='Disqus comments not available by default when the website is previewed locally.';return;}
-var d=document,s=d.createElement('script');s.async=true;s.src='//'+"ItDepends"+'.disqus.com/embed.js';s.setAttribute('data-timestamp',+new Date());(d.head||d.body).appendChild(s);})();</script><noscript>Please enable JavaScript to view the <a href=https://disqus.com/?ref_noscript>comments powered by Disqus.</a></noscript><a href=https://disqus.com class=dsq-brlink>comments powered by <span class=logo-disqus>Disqus</span></a></main><footer><p>Powered by <a target=_blank href=https://gohugo.io/>Hugo</a>, theme <a target=_blank href=https://github.com/mitrichius/hugo-theme-anubis>Anubis</a>.</p></footer></div></body></html>
+and setter injection.</p></div><div class=post-info><div class=post-date>2021-12-25</div><div class=post-taxonomies></div></div></article><div id=disqus_thread></div><script>window.disqus_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//ItDepends.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}()</script><noscript>Please enable JavaScript to view the <a href=https://disqus.com/?ref_noscript>comments powered by Disqus.</a></noscript><a href=https://disqus.com class=dsq-brlink>comments powered by <span class=logo-disqus>Disqus</span></a></main><footer><p>Powered by <a target=_blank href=https://gohugo.io/>Hugo</a>, theme <a target=_blank href=https://github.com/mitrichius/hugo-theme-anubis>Anubis</a>.</p></footer></div></body></html>
